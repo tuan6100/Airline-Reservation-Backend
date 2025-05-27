@@ -27,6 +27,9 @@ public class BookingEntity {
 
     private LocalDateTime expiresAt;
 
+    @Version
+    private Integer version;
+
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "booking_id")
     private Set<SeatReservationEntity> seatReservations = new HashSet<>();

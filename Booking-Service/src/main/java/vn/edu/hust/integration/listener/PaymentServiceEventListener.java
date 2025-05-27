@@ -19,15 +19,11 @@ public class PaymentServiceEventListener {
 
     @KafkaListener(topics = "payment-events.completed", groupId = "booking-service")
     public void handlePaymentCompleted(PaymentCompletedEvent event) {
-        // Payment completed, booking can be confirmed if not already
-        // This might be redundant if order service handles this
-        // Could implement as a fallback mechanism
+
     }
 
     @KafkaListener(topics = "payment-events.failed", groupId = "booking-service")
     public void handlePaymentFailed(PaymentFailedEvent event) {
-        // Payment failed, booking might need to be cancelled
-        // This might be redundant if order service handles this
-        // Could implement as a fallback mechanism
+
     }
 }

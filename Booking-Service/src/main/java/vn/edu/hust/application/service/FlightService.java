@@ -93,14 +93,10 @@ public class FlightService {
             if (flightDetails == null) {
                 throw new ServiceIntegrationException("Flight not found: " + flightId.value());
             }
-
-            // Determine price based on seat class
             double basePrice = switch (seatClassId.value().intValue()) {
-                case 1 -> // Economy
-                        flightDetails.getBaseEconomyPrice();
-                case 2 -> // Business
+                case 2 ->
                         flightDetails.getBaseBusinessPrice();
-                case 3 -> // First Class
+                case 3 ->
                         flightDetails.getBaseFirstClassPrice();
                 default -> flightDetails.getBaseEconomyPrice();
             };

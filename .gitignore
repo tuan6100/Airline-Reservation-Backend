@@ -1,2 +1,5 @@
 .idea
 Airline-Reservation.iml
+*.puml
+state-machine-diagrams-README.md
+

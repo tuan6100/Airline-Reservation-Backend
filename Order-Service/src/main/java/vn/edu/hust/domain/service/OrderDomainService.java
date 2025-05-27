@@ -12,9 +12,7 @@ import vn.edu.hust.infrastructure.event.DomainEventPublisher;
 
 import java.util.List;
 
-/**
- * Domain service for Order business logic
- */
+
 @Service
 public class OrderDomainService {
     @Autowired
@@ -23,37 +21,22 @@ public class OrderDomainService {
     @Autowired
     private DomainEventPublisher eventPublisher;
 
-    /**
-     * Create a new order for a booking
-     */
+
     public OrderId createOrder(BookingId bookingId, CustomerId customerId, PromotionId promotionId) {
-        // Check if order already exists for this booking
         Order existingOrder = orderRepository.findByBookingId(bookingId);
         if (existingOrder != null) {
-            // Return existing order if it's in PENDING status
             if (existingOrder.getStatus() == OrderStatus.PENDING) {
                 return existingOrder.getOrderId();
             }
-            // Otherwise, we might want to handle this case differently
-            // For now, let's just return the existing order ID
             return existingOrder.getOrderId();
         }
-
-        // Create new order
         Order order = Order.create(customerId, bookingId, promotionId);
-
-        // Save order
         Order savedOrder = orderRepository.save(order);
-
-        // Trigger events after ID is assigned
         savedOrder.afterCreate();
-
         return savedOrder.getOrderId();
     }
 
-    /**
-     * Add an item to an order
-     */
+
     public void addOrderItem(OrderId orderId, TicketId ticketId, FlightId flightId,
                              SeatId seatId, Money price, String description) {
         Order order = orderRepository.findById(orderId);
@@ -67,9 +50,6 @@ public class OrderDomainService {
         orderRepository.save(order);
     }
 
-    /**
-     * Confirm an order
-     */
     public void confirmOrder(OrderId orderId) {
         Order order = orderRepository.findById(orderId);
         if (order == null) {
@@ -80,9 +60,6 @@ public class OrderDomainService {
         orderRepository.save(order);
     }
 
-    /**
-     * Cancel an order
-     */
     public void cancelOrder(OrderId orderId, String reason) {
         Order order = orderRepository.findById(orderId);
         if (order == null) {
@@ -93,9 +70,6 @@ public class OrderDomainService {
         orderRepository.save(order);
     }
 
-    /**
-     * Mark order payment as pending
-     */
     public void markPaymentPending(OrderId orderId) {
         Order order = orderRepository.findById(orderId);
         if (order == null) {
@@ -106,9 +80,6 @@ public class OrderDomainService {
         orderRepository.save(order);
     }
 
-    /**
-     * Mark order as paid
-     */
     public void markOrderPaid(OrderId orderId) {
         Order order = orderRepository.findById(orderId);
         if (order == null) {
@@ -119,9 +90,6 @@ public class OrderDomainService {
         orderRepository.save(order);
     }
 
-    /**
-     * Mark order as refunded
-     */
     public void markOrderRefunded(OrderId orderId) {
         Order order = orderRepository.findById(orderId);
         if (order == null) {
@@ -132,16 +100,10 @@ public class OrderDomainService {
         orderRepository.save(order);
     }
 
-    /**
-     * Get all orders for a customer
-     */
     public List<Order> getOrdersByCustomer(CustomerId customerId) {
         return orderRepository.findByCustomerId(customerId);
     }
 
-    /**
-     * Get order by ID
-     */
     public Order getOrderById(OrderId orderId) {
         Order order = orderRepository.findById(orderId);
         if (order == null) {

@@ -12,9 +12,7 @@ import vn.edu.hust.infrastructure.dto.PaymentResponseDTO;
 
 import java.math.BigDecimal;
 
-/**
- * Client for communication with Payment Service
- */
+
 @Service
 public class PaymentServiceClient {
 
@@ -29,18 +27,13 @@ public class PaymentServiceClient {
         this.paymentServiceUrl = paymentServiceUrl;
     }
 
-    /**
-     * Initiate payment for an order
-     */
     public PaymentResponseDTO initiatePayment(OrderId orderId, BigDecimal amount, String currency, Long customerId) {
         String url = paymentServiceUrl + "/api/payments/initiate";
-
         InitiatePaymentRequest request = new InitiatePaymentRequest();
         request.setOrderId(orderId.value());
         request.setAmount(amount);
         request.setCurrency(currency);
         request.setCustomerId(customerId);
-
         ResponseEntity<PaymentResponseDTO> response = restTemplate.postForEntity(url, request, PaymentResponseDTO.class);
 
         if (response.getStatusCode() == HttpStatus.OK || response.getStatusCode() == HttpStatus.CREATED) {
@@ -50,13 +43,9 @@ public class PaymentServiceClient {
         }
     }
 
-    /**
-     * Get payment status
-     */
     public PaymentResponseDTO getPaymentStatus(Long paymentId) {
         String url = paymentServiceUrl + "/api/payments/" + paymentId;
         ResponseEntity<PaymentResponseDTO> response = restTemplate.getForEntity(url, PaymentResponseDTO.class);
-
         if (response.getStatusCode() == HttpStatus.OK) {
             return response.getBody();
         } else {

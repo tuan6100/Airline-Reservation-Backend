@@ -13,17 +13,13 @@ import vn.edu.hust.infrastructure.mapper.OrderMapper;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Implementation of OrderRepository using JPA
- */
+
 @Repository
 public class DomainOrderRepository implements OrderRepository {
 
-    @Autowired
-    private OrderJpaRepository jpaRepository;
+    @Autowired private OrderJpaRepository jpaRepository;
 
-    @Autowired
-    private OrderMapper mapper;
+    @Autowired private OrderMapper mapper;
 
     @Override
     public Order findById(OrderId orderId) {

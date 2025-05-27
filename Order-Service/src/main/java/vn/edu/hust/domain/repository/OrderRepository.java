@@ -8,9 +8,6 @@ import vn.edu.hust.domain.model.valueobj.OrderId;
 
 import java.util.List;
 
-/**
- * Repository interface for Order aggregate
- */
 @Repository
 public interface OrderRepository {
     Order findById(OrderId orderId);

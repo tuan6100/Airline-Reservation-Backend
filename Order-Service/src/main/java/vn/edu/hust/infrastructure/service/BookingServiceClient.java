@@ -9,9 +9,7 @@ import org.springframework.web.client.RestTemplate;
 import vn.edu.hust.domain.model.valueobj.BookingId;
 import vn.edu.hust.infrastructure.dto.BookingDTO;
 
-/**
- * Client for communication with Booking Service
- */
+
 @Service
 public class BookingServiceClient {
 
@@ -26,9 +24,6 @@ public class BookingServiceClient {
         this.bookingServiceUrl = bookingServiceUrl;
     }
 
-    /**
-     * Get booking details
-     */
     public BookingDTO getBookingDetails(BookingId bookingId) {
         String url = bookingServiceUrl + "/api/bookings/" + bookingId.value();
         ResponseEntity<BookingDTO> response = restTemplate.getForEntity(url, BookingDTO.class);
@@ -40,9 +35,6 @@ public class BookingServiceClient {
         }
     }
 
-    /**
-     * Confirm booking
-     */
     public void confirmBooking(BookingId bookingId) {
         String url = bookingServiceUrl + "/api/bookings/" + bookingId.value() + "/confirm";
         ResponseEntity<Void> response = restTemplate.postForEntity(url, null, Void.class);
@@ -52,9 +44,6 @@ public class BookingServiceClient {
         }
     }
 
-    /**
-     * Cancel booking
-     */
     public void cancelBooking(BookingId bookingId, String reason) {
         String url = bookingServiceUrl + "/api/bookings/" + bookingId.value() + "/cancel?reason=" + reason;
         ResponseEntity<Void> response = restTemplate.postForEntity(url, null, Void.class);

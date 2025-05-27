@@ -12,9 +12,7 @@ import java.util.Currency;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Mapper for Order aggregate
- */
+
 @Component
 public class OrderMapper {
 
@@ -31,19 +29,13 @@ public class OrderMapper {
                 new BookingId(entity.getBookingId()),
                 entity.getPromotionId() != null ? new PromotionId(entity.getPromotionId()) : null
         );
-
-        // Set ID after creation
         order.setOrderId(new OrderId(entity.getId()));
-
-        // Set other properties
         order.setStatus(entity.getStatus());
         order.setPaymentStatus(entity.getPaymentStatus());
         order.setTotalAmount(new Money(entity.getTotalAmount(), Currency.getInstance(entity.getCurrency())));
         order.setCreatedAt(entity.getCreatedAt());
         order.setUpdatedAt(entity.getUpdatedAt());
         order.setVersion(entity.getVersion());
-
-        // Add items
         entity.getItems().forEach(itemEntity -> {
             OrderItem item = orderItemMapper.toDomain(itemEntity);
             order.addItem(item);
@@ -56,14 +48,10 @@ public class OrderMapper {
         if (domain == null) {
             return null;
         }
-
         OrderEntity entity = new OrderEntity();
-
-        // Set ID if available
         if (domain.getOrderId() != null) {
             entity.setId(domain.getOrderId().value());
         }
-
         entity.setCustomerId(domain.getCustomerId().value());
         entity.setBookingId(domain.getBookingId().value());
         entity.setPromotionId(domain.getPromotionId() != null ? domain.getPromotionId().value() : null);
@@ -74,14 +62,11 @@ public class OrderMapper {
         entity.setCreatedAt(domain.getCreatedAt());
         entity.setUpdatedAt(domain.getUpdatedAt());
         entity.setVersion(domain.getVersion());
-
-        // Map items
         List<OrderItemEntity> itemEntities = domain.getOrderItems().stream()
                 .map(orderItemMapper::toEntity)
                 .collect(Collectors.toList());
 
         entity.setItems(itemEntities);
-
         return entity;
     }
 }

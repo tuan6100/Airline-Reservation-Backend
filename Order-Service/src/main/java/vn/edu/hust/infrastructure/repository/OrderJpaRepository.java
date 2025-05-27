@@ -10,9 +10,7 @@ import vn.edu.hust.infrastructure.entity.OrderEntity;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Spring Data JPA repository for Order entities
- */
+
 @Repository
 public interface OrderJpaRepository extends JpaRepository<OrderEntity, Long> {
 

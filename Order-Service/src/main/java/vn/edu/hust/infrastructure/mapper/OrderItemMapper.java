@@ -7,9 +7,7 @@ import vn.edu.hust.infrastructure.entity.OrderItemEntity;
 
 import java.util.Currency;
 
-/**
- * Mapper for OrderItem entity
- */
+
 @Component
 public class OrderItemMapper {
 
@@ -25,20 +23,15 @@ public class OrderItemMapper {
                 new Money(entity.getPrice(), Currency.getInstance(entity.getCurrency())),
                 entity.getDescription()
         );
-
-        // Set internal ID
         if (entity.getId() != null) {
             try {
-                // Use reflection to set ID field which is private
                 java.lang.reflect.Field idField = OrderItem.class.getDeclaredField("id");
                 idField.setAccessible(true);
                 idField.set(item, entity.getId());
             } catch (Exception e) {
-                // Log error and continue
                 System.err.println("Error setting ID field: " + e.getMessage());
             }
         }
-
         return item;
     }
 
@@ -46,21 +39,16 @@ public class OrderItemMapper {
         if (domain == null) {
             return null;
         }
-
         OrderItemEntity entity = new OrderItemEntity();
-
-        // Set ID if available
         if (domain.getId() != null) {
             entity.setId(domain.getId());
         }
-
         entity.setTicketId(domain.getTicketId().value());
         entity.setFlightId(domain.getFlightId().value());
         entity.setSeatId(domain.getSeatId().value());
         entity.setPrice(domain.getPrice().getAmount());
         entity.setCurrency(domain.getPrice().getCurrency().getCurrencyCode());
         entity.setDescription(domain.getDescription());
-
         return entity;
     }
 }

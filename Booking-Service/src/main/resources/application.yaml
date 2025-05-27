@@ -5,10 +5,15 @@ spring:
   application:
     name: Booking-Service
 
+  threads:
+    virtual:
+      enabled: true
+
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/airline_booking
-    username: postgres
-    password: password
+    url: jdbc:postgresql://localhost:5432/airline_reservation_db
+    username: tuan
+    password: 20226100
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -22,6 +27,7 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
 
 
 services:

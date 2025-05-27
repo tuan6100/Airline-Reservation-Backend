@@ -76,51 +76,37 @@ public class Order {
         }
     }
 
-    /**
-     * Add an item to the order
-     */
+
     public void addItem(OrderItem item) {
         if (status != OrderStatus.PENDING) {
             throw new IllegalStateException("Cannot modify a non-pending order");
         }
-
-        // Check if item with same ticket ID already exists
         boolean itemExists = orderItems.stream()
                 .anyMatch(i -> i.getTicketId().equals(item.getTicketId()));
 
         if (itemExists) {
             throw new IllegalArgumentException("Order already contains item with ticket ID: " + item.getTicketId());
         }
-
         orderItems.add(item);
         recalculateTotalAmount();
         this.updatedAt = LocalDateTime.now();
     }
 
-    /**
-     * Recalculate total amount
-     */
+
     private void recalculateTotalAmount() {
         Money newTotal = Money.ZERO;
 
         for (OrderItem item : orderItems) {
             newTotal = newTotal.add(item.getPrice());
         }
-
-        // Apply promotion if any
-        // This is simplified - actual discount logic would be more complex
         if (promotionId != null) {
-            // Apply discount logic - replaced with actual implementation
-            // Example: 10% discount
             newTotal = newTotal.multiply(0.9);
         }
 
         this.totalAmount = newTotal;
     }
 
-    /**
-     * Confirm the order
-     */
+
     public void confirm() {
         if (status == OrderStatus.CONFIRMED) {
             throw new OrderAlreadyConfirmedException("Order is already confirmed: " + orderId);
@@ -155,9 +141,7 @@ public class Order {
         ));
     }
 
-    /**
-     * Mark order as payment pending
-     */
+
     public void markPaymentPending() {
         if (status != OrderStatus.CONFIRMED) {
             throw new IllegalStateException("Order must be confirmed before payment: " + orderId);
@@ -172,7 +156,6 @@ public class Order {
         this.updatedAt = LocalDateTime.now();
         this.version++;
 
-        // Raise domain event - could be done here or in a service
         DomainEventPublisher.instance().publish(new OrderStatusChangedEvent(
                 this.orderId,
                 OrderStatus.CONFIRMED,
@@ -181,20 +164,14 @@ public class Order {
         ));
     }
 
-    /**
-     * Mark order as paid
-     */
     public void markPaid() {
         if (status != OrderStatus.PAYMENT_PENDING) {
             throw new IllegalStateException("Order must be in payment pending state: " + orderId);
         }
-
         this.paymentStatus = PaymentStatus.COMPLETED;
         this.status = OrderStatus.PAID;
         this.updatedAt = LocalDateTime.now();
         this.version++;
-
-        // Raise domain event
         DomainEventPublisher.instance().publish(new OrderStatusChangedEvent(
                 this.orderId,
                 OrderStatus.PAYMENT_PENDING,
@@ -203,31 +180,23 @@ public class Order {
         ));
     }
 
-    /**
-     * Cancel the order
-     */
     public void cancel(String reason) {
         if (status == OrderStatus.CANCELLED) {
             throw new IllegalStateException("Order is already cancelled: " + orderId);
         }
-
         if (status == OrderStatus.PAID) {
             throw new IllegalStateException("Paid order cannot be cancelled directly, must be refunded: " + orderId);
         }
-
         OrderStatus oldStatus = this.status;
         this.status = OrderStatus.CANCELLED;
         this.updatedAt = LocalDateTime.now();
         this.version++;
-
-        // Raise domain event
         DomainEventPublisher.instance().publish(new OrderCancelledEvent(
                 this.orderId,
                 this.bookingId,
                 reason,
                 this.updatedAt
         ));
-
         DomainEventPublisher.instance().publish(new OrderStatusChangedEvent(
                 this.orderId,
                 oldStatus,
@@ -236,20 +205,15 @@ public class Order {
         ));
     }
 
-    /**
-     * Mark order as refunded
-     */
+
     public void markRefunded() {
         if (status != OrderStatus.PAID) {
             throw new IllegalStateException("Only paid orders can be refunded: " + orderId);
         }
-
         this.status = OrderStatus.REFUNDED;
         this.paymentStatus = PaymentStatus.REFUNDED;
         this.updatedAt = LocalDateTime.now();
         this.version++;
-
-        // Raise domain event
         DomainEventPublisher.instance().publish(new OrderStatusChangedEvent(
                 this.orderId,
                 OrderStatus.PAID,
@@ -258,7 +222,6 @@ public class Order {
         ));
     }
 
-    // Helper methods for domain events
     private void registerEvent(Object event) {
         DomainEventPublisher.instance().publish(event);
     }

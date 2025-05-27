@@ -17,13 +17,9 @@ public class OrderItem {
     private Money price;
     private String description;
 
-    // Private constructor for creation via static methods
     private OrderItem() {
     }
 
-    /**
-     * Create a new order item
-     */
     public static OrderItem create(TicketId ticketId, FlightId flightId, SeatId seatId, Money price, String description) {
         Objects.requireNonNull(ticketId, "Ticket ID cannot be null");
         Objects.requireNonNull(flightId, "Flight ID cannot be null");
@@ -40,7 +36,6 @@ public class OrderItem {
         return item;
     }
 
-    // Equals and hashCode
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

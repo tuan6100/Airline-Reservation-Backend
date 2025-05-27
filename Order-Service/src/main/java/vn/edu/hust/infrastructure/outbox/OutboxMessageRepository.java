@@ -6,17 +6,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * Repository for OutboxMessage entities
- */
+
 @Repository
 public interface OutboxMessageRepository extends JpaRepository<OutboxMessage, Long> {
-    
-    /**
-     * Find unprocessed messages ordered by creation time
-     * 
-     * @param pageable pagination information
-     * @return list of unprocessed messages
-     */
+
     List<OutboxMessage> findByProcessedFalseOrderByCreatedAtAsc(Pageable pageable);
 }

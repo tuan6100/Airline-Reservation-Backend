@@ -37,5 +37,5 @@ public class SeatEntity {
     @Version
     private Integer version;
 
-    // Getters, setters, etc.
+    private Boolean isAvailable = true;
 }

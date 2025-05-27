@@ -11,9 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Service to handle outbox pattern
- */
+
 @Service
 public class OutboxService {
 
@@ -27,30 +25,21 @@ public class OutboxService {
         outboxMessageRepository.save(message);
     }
 
-    @Scheduled(fixedRate = 5000) // Run every 5 seconds
+    @Scheduled(fixedRate = 5000)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processOutbox() {
         List<OutboxMessage> messages = outboxMessageRepository.findByProcessedFalseOrderByCreatedAtAsc(
                 PageRequest.of(0, 10));
-
         for (OutboxMessage message : messages) {
             try {
-                // Determine topic based on event type
                 String topic = determineTopicForEvent(message.getEventType());
-
-                // Send to Kafka
                 kafkaTemplate.send(topic, message.getAggregateId(), message.getPayload());
-
-                // Mark as processed
                 message.setProcessed(true);
                 message.setProcessedAt(LocalDateTime.now());
                 outboxMessageRepository.save(message);
             } catch (Exception e) {
-                // Increment retry count
                 message.setRetryCount(message.getRetryCount() + 1);
                 outboxMessageRepository.save(message);
-
-                // Log error
                 e.printStackTrace();
             }
         }
