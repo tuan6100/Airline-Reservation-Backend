@@ -1,6 +1,7 @@
 package vn.edu.hust.infrastructure.event;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.axonframework.spring.event.AxonStartedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -21,7 +22,9 @@ public class KafkaEventPublisher {
     @EventListener
     public void handleDomainEvent(Object event) {
         String topic = determineTopicForEvent(event);
-        kafkaTemplate.send(topic, event);
+        if (!(event instanceof AxonStartedEvent)) {
+            kafkaTemplate.send(topic, event);
+        }
     }
 
     private String determineTopicForEvent(Object event) {
