@@ -1,1 +1,53 @@
-spring.application.name=Order-Service
+server:
+  port: 8002
+
+spring:
+  application:
+    name: Order-Service
+
+  threads:
+    virtual:
+      enabled: true
+
+
+  datasource:
+    url: ${POSTGRESQL_URL}
+    username: ${POSTGRESQL_USERNAME}
+    password: ${POSTGRESQL_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      #      group-id: order-group
+      enable-auto-commit: true
+      properties:
+        spring.json.trusted.packages: "*"
+
+axon:
+  axonserver:
+    servers: localhost:8124
+    enabled: ${AXON_SERVER_ENABLED:true}
+  serializer:
+    general: jackson
+  eventhandling:
+    processors:
+      myProcessor:
+        mode: subscribing
+
+services:
+  flight:
+    url: http://flight-service
+  booking:
+    url: http://booking-service
+  payment:
+    url: http://payment-service
