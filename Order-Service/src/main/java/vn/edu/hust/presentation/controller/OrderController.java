@@ -11,7 +11,6 @@ import vn.edu.hust.application.dto.query.OrderDTO;
 import vn.edu.hust.application.dto.query.OrderSummaryDTO;
 import vn.edu.hust.infrastructure.dto.PaymentResponseDTO;
 
-import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -23,7 +22,7 @@ public class OrderController {
     private OrderApplicationService orderApplicationService;
 
     @PostMapping
-    public ResponseEntity<OrderDTO> createOrder(@Valid @RequestBody CreateOrderCommand command) {
+    public ResponseEntity<OrderDTO> createOrder(@RequestBody CreateOrderCommand command) {
         OrderDTO order = orderApplicationService.createOrder(command);
         return new ResponseEntity<>(order, HttpStatus.CREATED);
     }
@@ -37,7 +36,7 @@ public class OrderController {
     @PutMapping("/{orderId}")
     public ResponseEntity<OrderDTO> updateOrder(
             @PathVariable Long orderId,
-            @Valid @RequestBody UpdateOrderCommand command) {
+            @RequestBody UpdateOrderCommand command) {
         command.setOrderId(orderId);
         OrderDTO order = orderApplicationService.updateOrder(command);
         return ResponseEntity.ok(order);

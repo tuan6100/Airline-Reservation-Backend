@@ -6,15 +6,13 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import vn.edu.hust.domain.model.valueobj.OrderId;
+import vn.edu.hust.domain.event.*;
 import vn.edu.hust.infrastructure.outbox.OutboxMessage;
 import vn.edu.hust.infrastructure.outbox.OutboxService;
 
 import java.time.LocalDateTime;
 
-/**
- * Event publisher that uses Kafka
- */
+
 @Component
 public class KafkaEventPublisher {
 
@@ -26,32 +24,77 @@ public class KafkaEventPublisher {
 
     @EventListener
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void handleDomainEvent(Object event) {
+    public void handleOrderCreatedEvent(OrderCreatedEvent event) {
         try {
-            if (event instanceof OrderEvent) {
-                handleOrderEvent((OrderEvent) event);
-            }
+            OutboxMessage message = new OutboxMessage();
+            message.setAggregateType("Order");
+            message.setAggregateId(event.orderId().toString());
+            message.setEventType("OrderCreatedEvent");
+            message.setPayload(objectMapper.writeValueAsString(event));
+            message.setCreatedAt(LocalDateTime.now());
+            message.setProcessed(false);
+            message.setRetryCount(0);
+
+            outboxService.saveMessage(message);
         } catch (Exception e) {
-            // Log error
             e.printStackTrace();
         }
     }
 
-    private void handleOrderEvent(OrderEvent event) throws Exception {
-        OutboxMessage message = new OutboxMessage();
-        message.setAggregateType("Order");
-        message.setAggregateId(event.getOrderId().toString());
-        message.setEventType(event.getClass().getSimpleName());
-        message.setPayload(objectMapper.writeValueAsString(event));
-        message.setCreatedAt(LocalDateTime.now());
-        message.setProcessed(false);
-        message.setRetryCount(0);
+    @EventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void handleOrderConfirmedEvent(OrderConfirmedEvent event) {
+        try {
+            OutboxMessage message = new OutboxMessage();
+            message.setAggregateType("Order");
+            message.setAggregateId(event.orderId().toString());
+            message.setEventType("OrderConfirmedEvent");
+            message.setPayload(objectMapper.writeValueAsString(event));
+            message.setCreatedAt(LocalDateTime.now());
+            message.setProcessed(false);
+            message.setRetryCount(0);
 
-        outboxService.saveMessage(message);
+            outboxService.saveMessage(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    // Marker interface for Order events
-    private interface OrderEvent {
-        OrderId getOrderId();
+    @EventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void handleOrderCancelledEvent(OrderCancelledEvent event) {
+        try {
+            OutboxMessage message = new OutboxMessage();
+            message.setAggregateType("Order");
+            message.setAggregateId(event.orderId().toString());
+            message.setEventType("OrderCancelledEvent");
+            message.setPayload(objectMapper.writeValueAsString(event));
+            message.setCreatedAt(LocalDateTime.now());
+            message.setProcessed(false);
+            message.setRetryCount(0);
+
+            outboxService.saveMessage(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @EventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void handleOrderStatusChangedEvent(OrderStatusChangedEvent event) {
+        try {
+            OutboxMessage message = new OutboxMessage();
+            message.setAggregateType("Order");
+            message.setAggregateId(event.orderId().toString());
+            message.setEventType("OrderStatusChangedEvent");
+            message.setPayload(objectMapper.writeValueAsString(event));
+            message.setCreatedAt(LocalDateTime.now());
+            message.setProcessed(false);
+            message.setRetryCount(0);
+
+            outboxService.saveMessage(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

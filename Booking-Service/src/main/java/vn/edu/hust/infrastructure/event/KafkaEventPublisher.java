@@ -1,7 +1,6 @@
 package vn.edu.hust.infrastructure.event;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.axonframework.spring.event.AxonStartedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -20,28 +19,47 @@ public class KafkaEventPublisher {
     }
 
     @EventListener
-    public void handleDomainEvent(Object event) {
-        String topic = determineTopicForEvent(event);
-        if (!(event instanceof AxonStartedEvent)) {
-            kafkaTemplate.send(topic, event);
-        }
+    public void handleBookingCreatedEvent(BookingCreatedEvent event) {
+        kafkaTemplate.send("booking-events.created", event);
     }
 
-    private String determineTopicForEvent(Object event) {
-        if (event instanceof BookingCreatedEvent) {
-            return "booking-events.created";
-        } else if (event instanceof BookingConfirmedEvent) {
-            return "booking-events.confirmed";
-        } else if (event instanceof BookingCancelledEvent) {
-            return "booking-events.cancelled";
-        } else if (event instanceof BookingExpiredEvent) {
-            return "booking-events.expired";
-        } else if (event instanceof SeatHeldEvent ||
-                event instanceof SeatReservedEvent ||
-                event instanceof SeatReleasedEvent) {
-            return "seat-events";
-        }
+    @EventListener
+    public void handleBookingConfirmedEvent(BookingConfirmedEvent event) {
+        kafkaTemplate.send("booking-events.confirmed", event);
+    }
 
-        return "booking-events";
+    @EventListener
+    public void handleBookingCancelledEvent(BookingCancelledEvent event) {
+        kafkaTemplate.send("booking-events.cancelled", event);
+    }
+
+    @EventListener
+    public void handleBookingExpiredEvent(BookingExpiredEvent event) {
+        kafkaTemplate.send("booking-events.expired", event);
+    }
+
+    @EventListener
+    public void handleSeatHeldEvent(SeatHeldEvent event) {
+        kafkaTemplate.send("seat-events", event);
+    }
+
+    @EventListener
+    public void handleSeatReservedEvent(SeatReservedEvent event) {
+        kafkaTemplate.send("seat-events", event);
+    }
+
+    @EventListener
+    public void handleSeatReleasedEvent(SeatReleasedEvent event) {
+        kafkaTemplate.send("seat-events", event);
+    }
+
+    @EventListener
+    public void handleSeatAddedToBookingEvent(SeatAddedToBookingEvent event) {
+        kafkaTemplate.send("seat-events", event);
+    }
+
+    @EventListener
+    public void handleSeatRemovedFromBookingEvent(SeatRemovedFromBookingEvent event) {
+        kafkaTemplate.send("seat-events", event);
     }
 }

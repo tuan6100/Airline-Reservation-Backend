@@ -17,7 +17,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -28,21 +28,11 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
-      #      group-id: order-group
+      group-id: order-group
       enable-auto-commit: true
       properties:
         spring.json.trusted.packages: "*"
 
-axon:
-  axonserver:
-    servers: localhost:8124
-    enabled: ${AXON_SERVER_ENABLED:true}
-  serializer:
-    general: jackson
-  eventhandling:
-    processors:
-      myProcessor:
-        mode: subscribing
 
 services:
   flight:

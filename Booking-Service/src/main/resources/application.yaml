@@ -28,7 +28,7 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
-#      group-id: booking-group
+      group-id: booking-group
       enable-auto-commit: true
       properties:
         spring.json.trusted.packages: "*"

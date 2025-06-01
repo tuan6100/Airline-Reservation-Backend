@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.hust.application.dto.command.CreateBookingCommand;
+import vn.edu.hust.application.dto.command.SeatSelectionDTO;
 import vn.edu.hust.application.dto.query.BookingDTO;
 import vn.edu.hust.application.dto.query.SeatDTO;
 import vn.edu.hust.application.dto.query.SeatReservationDTO;
@@ -35,6 +36,7 @@ public class BookingApplicationService {
         List<SeatSelectionRequest> seatSelections = command.getSeatSelections().stream()
                 .map(s -> new SeatSelectionRequest(
                         new SeatId(s.getSeatId()),
+                        new SeatClassId(1L), // Default to economy, you might want to get this from seat data
                         new Money(s.getAmount(), Currency.getInstance(s.getCurrency()))
                 ))
                 .collect(Collectors.toList());
