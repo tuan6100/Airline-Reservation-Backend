@@ -112,7 +112,7 @@ $$;
 CALL create_monthly_flight_partitions(
                 CURRENT_DATE,
                 (CURRENT_DATE + INTERVAL '12 months')::DATE
-);
+     );
 
 CREATE INDEX idx_flight_route_id ON "Flight" ("route_id");
 CREATE INDEX idx_flight_departure_time ON "Flight" ("departure_time", "estimated_flight_duration");
