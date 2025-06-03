@@ -40,39 +40,29 @@ public class BookingApplicationService {
                         new Money(s.getAmount(), Currency.getInstance(s.getCurrency()))
                 ))
                 .collect(Collectors.toList());
-
-        // Call domain service
         BookingId bookingId = bookingDomainService.createBooking(customerId, seatSelections);
-
-        // Retrieve and convert to DTO
         Booking booking = bookingRepository.findById(bookingId);
         return convertToDTO(booking);
     }
 
-    // Confirm a booking after payment
     @Transactional
     public BookingDTO confirmBooking(String bookingId) {
         bookingDomainService.confirmBooking(new BookingId(bookingId));
-
         Booking booking = bookingRepository.findById(new BookingId(bookingId));
         return convertToDTO(booking);
     }
 
-    // Cancel a booking
     @Transactional
     public BookingDTO cancelBooking(String bookingId, String reason) {
         CancellationReason cancellationReason = CancellationReason.valueOf(reason);
         bookingDomainService.cancelBooking(new BookingId(bookingId), cancellationReason);
-
         Booking booking = bookingRepository.findById(new BookingId(bookingId));
         return convertToDTO(booking);
     }
 
-    // Get booking by ID
     @Transactional(readOnly = true)
     public BookingDTO getBooking(String bookingId) {
         Booking booking = bookingRepository.findById(new BookingId(bookingId));
-
         if (booking == null) {
             throw new EntityNotFoundException("Booking not found: " + bookingId);
         }
@@ -80,23 +70,19 @@ public class BookingApplicationService {
         return convertToDTO(booking);
     }
 
-    // Get all bookings for a customer
     @Transactional(readOnly = true)
     public List<BookingDTO> getBookingsByCustomer(Long customerId) {
         List<Booking> bookings = bookingRepository.findByCustomerId(new CustomerId(customerId));
         return bookings.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    // Get available seats for a flight
     @Transactional(readOnly = true)
     public List<SeatDTO> getAvailableSeats(Long flightId) {
         List<Seat> availableSeats = seatRepository.findAvailableByFlightId(new FlightId(flightId));
         return availableSeats.stream().map(this::convertToSeatDTO).collect(Collectors.toList());
     }
 
-    // Helper methods for DTO conversion
     private BookingDTO convertToDTO(Booking booking) {
-        // Implementation of conversion from domain model to DTO
         return new BookingDTO(
                 booking.getBookingId().value(),
                 booking.getCustomerId().value(),

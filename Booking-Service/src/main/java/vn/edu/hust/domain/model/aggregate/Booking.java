@@ -32,9 +32,7 @@ public class Booking {
     private LocalDateTime createdAt;
     private LocalDateTime expiresAt;
 
-    // Constructors, methods, etc.
 
-    // Factory method for creating a new booking
     public static Booking create(BookingId bookingId, CustomerId customerId, List<SeatReservation> seatReservations) {
         Booking booking = new Booking();
         booking.bookingId = bookingId;
@@ -42,7 +40,7 @@ public class Booking {
         booking.seatReservations = new HashSet<>(seatReservations);
         booking.status = BookingStatus.PENDING;
         booking.createdAt = LocalDateTime.now();
-        booking.expiresAt = LocalDateTime.now().plusMinutes(15); // Default hold time
+        booking.expiresAt = LocalDateTime.now().plusMinutes(15);
 
         // Raise domain event
         booking.registerEvent(new BookingCreatedEvent(bookingId, customerId, seatReservations, booking.expiresAt));
@@ -50,27 +48,22 @@ public class Booking {
         return booking;
     }
 
-    // Business method to confirm booking
     public void confirm() {
         if (status != BookingStatus.PENDING) {
             throw new IllegalStateException("Booking must be in PENDING state to be confirmed");
         }
-
         status = BookingStatus.CONFIRMED;
         registerEvent(new BookingConfirmedEvent(bookingId));
     }
 
-    // Business method to cancel booking
     public void cancel(CancellationReason reason) {
         if (status == BookingStatus.CANCELLED) {
             throw new IllegalStateException("Booking is already cancelled");
         }
-
         status = BookingStatus.CANCELLED;
         registerEvent(new BookingCancelledEvent(bookingId, reason));
     }
 
-    // Business method to expire booking
     public void expire() {
         if (status != BookingStatus.PENDING) {
             throw new IllegalStateException("Only pending bookings can expire");
@@ -80,12 +73,10 @@ public class Booking {
         registerEvent(new BookingExpiredEvent(bookingId));
     }
 
-    // Check if booking is expired
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(expiresAt);
     }
 
-    // Add seat reservation
     public void addSeatReservation(SeatReservation reservation) {
         if (status != BookingStatus.PENDING) {
             throw new IllegalStateException("Cannot modify non-pending booking");

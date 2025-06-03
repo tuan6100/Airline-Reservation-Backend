@@ -23,80 +23,40 @@ import java.time.LocalDateTime;
 public class Seat {
     @AggregateIdentifier
     private SeatId seatId;
-    private FlightId flightId;
-    private AircraftId aircraftId;
     private SeatClassId seatClassId;
-    private SeatStatus status;
+    private AircraftId aircraftId;
+    private String seatCode;
+    private Boolean isAvailable;
     private LocalDateTime holdUntil;
     private int version;
 
-    // Constructor, getters, etc.
-
-    // Factory method
-    public static Seat create(SeatId seatId, FlightId flightId, AircraftId aircraftId,
-                              SeatClassId seatClassId) {
+    public static Seat create(SeatClassId seatClassId, AircraftId aircraftId, String seatCode) {
         Seat seat = new Seat();
-        seat.seatId = seatId;
-        seat.flightId = flightId;
-        seat.aircraftId = aircraftId;
         seat.seatClassId = seatClassId;
-        seat.status = SeatStatus.AVAILABLE;
+        seat.aircraftId = aircraftId;
+        seat.seatCode = seatCode;
+        seat.isAvailable = true;
         seat.version = 0;
-
         return seat;
     }
 
-    // Hold seat temporarily
-    public void hold(CustomerId customerId, Duration holdDuration) {
-        if (status != SeatStatus.AVAILABLE) {
-            throw new SeatNotAvailableException("Seat is not available for holding");
+    public void hold(Duration holdDuration) {
+        if (!isAvailable) {
+            throw new IllegalStateException("Seat is not available for holding");
         }
-
-        status = SeatStatus.ON_HOLD;
+        isAvailable = false;
         holdUntil = LocalDateTime.now().plus(holdDuration);
         version++;
-
-        registerEvent(new SeatHeldEvent(seatId, flightId, customerId, holdUntil));
     }
 
-    // Reserve seat permanently
-    public void reserve(CustomerId customerId) {
-        if (status == SeatStatus.RESERVED) {
-            throw new SeatNotAvailableException("Seat is already reserved");
-        }
-
-        if (status == SeatStatus.ON_HOLD && LocalDateTime.now().isAfter(holdUntil)) {
-            // Hold has expired
-            release();
-        }
-
-        if (status != SeatStatus.AVAILABLE && status != SeatStatus.ON_HOLD) {
-            throw new SeatNotAvailableException("Seat is not available for reservation");
-        }
-
-        status = SeatStatus.RESERVED;
-        holdUntil = null;
-        version++;
-
-        registerEvent(new SeatReservedEvent(seatId, flightId, customerId));
-    }
-
-    // Release a seat
     public void release() {
-        if (status == SeatStatus.AVAILABLE) {
-            return;
-        }
-
-        status = SeatStatus.AVAILABLE;
+        isAvailable = true;
         holdUntil = null;
         version++;
-
-        registerEvent(new SeatReleasedEvent(seatId, flightId));
     }
 
-    // Check if hold has expired
     public boolean isHoldExpired() {
-        return status == SeatStatus.ON_HOLD && LocalDateTime.now().isAfter(holdUntil);
+        return holdUntil != null && LocalDateTime.now().isAfter(holdUntil);
     }
 
     private void registerEvent(Object event) {

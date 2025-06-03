@@ -35,7 +35,7 @@ public class DomainSeatRepository implements SeatRepository {
 
     @Override
     public List<Seat> findByFlightId(FlightId flightId) {
-        return seatJpaRepository.findByFlightId(flightId.value())
+        return seatJpaRepository.findByAircraftId(flightId.value())
                 .stream()
                 .map(seatMapper::toDomain)
                 .collect(Collectors.toList());
@@ -43,7 +43,7 @@ public class DomainSeatRepository implements SeatRepository {
 
     @Override
     public List<Seat> findAvailableByFlightId(FlightId flightId) {
-        return seatJpaRepository.findByFlightIdAndStatus(flightId.value(), SeatStatus.AVAILABLE.name())
+        return seatJpaRepository.findByAircraftIdAndStatus(flightId.value(), SeatStatus.AVAILABLE.name())
                 .stream()
                 .map(seatMapper::toDomain)
                 .collect(Collectors.toList());
