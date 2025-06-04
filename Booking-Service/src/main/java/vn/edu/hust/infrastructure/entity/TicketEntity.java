@@ -35,10 +35,18 @@ public class TicketEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Enumerated(EnumType.ORDINAL)
     @Column(name = "status")
-    private TicketStatus status;
+    private TicketStatus status = TicketStatus.AVAILABLE;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seat_id", insertable = false, updatable = false)
     private SeatEntity seat;
+
+    @Column(name = "booking_id")
+    private String bookingId;
+
+    public Long getSeatId() {
+        return seat != null ? seat.getSeatId() : null;
+    }
 }

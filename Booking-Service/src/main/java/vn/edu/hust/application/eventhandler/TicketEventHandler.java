@@ -28,7 +28,6 @@ public class TicketEventHandler {
         ticketEntity.setSeat(seatJpaRepository.findById(event.seatId()).get());
         ticketEntity.setStatus(event.status());
         ticketEntity.setCreatedAt(event.createdAt());
-
         ticketJpaRepository.save(ticketEntity);
     }
 
@@ -36,8 +35,6 @@ public class TicketEventHandler {
     public void on(TicketHeldEvent event) {
         TicketEntity ticketEntity = ticketJpaRepository.findById(event.ticketId()).get();
         ticketEntity.setStatus(TicketStatus.HELD);
-        ticketEntity.setHoldUntil(event.holdUntil());
-        ticketEntity.setHeldByCustomerId(event.customerId());
         ticketJpaRepository.save(ticketEntity);
     }
 
@@ -45,10 +42,8 @@ public class TicketEventHandler {
     public void on(TicketBookedEvent event) {
         TicketEntity ticketEntity = ticketJpaRepository.findByTicketId(event.ticketId());
         if (ticketEntity != null) {
-            ticketEntity.setStatus("BOOKED");
-            ticketEntity.setHeldByCustomerId(event.customerId());
+            ticketEntity.setStatus(TicketStatus.BOOKED);
             ticketEntity.setBookingId(event.bookingId());
-            ticketEntity.setHoldUntil(null);
             ticketJpaRepository.save(ticketEntity);
         }
     }
@@ -57,9 +52,7 @@ public class TicketEventHandler {
     public void on(TicketReleasedEvent event) {
         TicketEntity ticketEntity = ticketJpaRepository.findByTicketId(event.ticketId());
         if (ticketEntity != null) {
-            ticketEntity.setStatus("AVAILABLE");
-            ticketEntity.setHoldUntil(null);
-            ticketEntity.setHeldByCustomerId(null);
+            ticketEntity.setStatus(TicketStatus.AVAILABLE);
             ticketEntity.setBookingId(null);
             ticketJpaRepository.save(ticketEntity);
         }
@@ -69,7 +62,7 @@ public class TicketEventHandler {
     public void on(TicketCancelledEvent event) {
         TicketEntity ticketEntity = ticketJpaRepository.findByTicketId(event.ticketId());
         if (ticketEntity != null) {
-            ticketEntity.setStatus("CANCELLED");
+            ticketEntity.setStatus(TicketStatus.CANCELLED);
             ticketJpaRepository.save(ticketEntity);
         }
     }

@@ -15,8 +15,15 @@ public class BookingDTO {
     private String bookingId;
     private Long customerId;
     private List<SeatReservationDTO> seats;
+    private List<TicketReservationDTO> tickets;
     private BookingStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime expiresAt;
-
+    private Long flightId;
+    private LocalDateTime flightDepartureTime;
+    private Double totalAmount;
+    private String currency;
+    private Integer seatCount;
+    private Integer ticketCount;
+    private FlightDetailsDTO flightDetails;
 }

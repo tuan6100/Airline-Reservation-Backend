@@ -5,9 +5,7 @@ import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import vn.edu.hust.application.dto.command.CancelBookingCommand;
-import vn.edu.hust.application.dto.command.ConfirmBookingCommand;
-import vn.edu.hust.application.dto.command.CreateBookingCommand;
+import vn.edu.hust.application.dto.command.*;
 import vn.edu.hust.application.dto.query.*;
 
 import java.util.List;
@@ -24,7 +22,32 @@ public class BookingApplicationService {
     private QueryGateway queryGateway;
 
     public CompletableFuture<String> createBooking(CreateBookingCommand command) {
-        command.setBookingId(UUID.randomUUID().toString());
+        if (command.getBookingId() == null) {
+            command.setBookingId(UUID.randomUUID().toString());
+        }
+        return commandGateway.send(command);
+    }
+
+    public CompletableFuture<Void> addTicketToBooking(String bookingId, Long ticketId, Long seatId, Double price, String currency) {
+        AddTicketToBookingCommand command = new AddTicketToBookingCommand();
+        command.setBookingId(bookingId);
+        command.setTicketId(ticketId);
+        command.setSeatId(seatId);
+        command.setPrice(price);
+        command.setCurrency(currency);
+        return commandGateway.send(command);
+    }
+
+    public CompletableFuture<Void> removeTicketFromBooking(String bookingId, Long ticketId) {
+        RemoveTicketFromBookingCommand command = new RemoveTicketFromBookingCommand();
+        command.setBookingId(bookingId);
+        command.setTicketId(ticketId);
+        return commandGateway.send(command);
+    }
+
+    public CompletableFuture<Void> expireBooking(String bookingId) {
+        ExpireBookingCommand command = new ExpireBookingCommand();
+        command.setBookingId(bookingId);
         return commandGateway.send(command);
     }
 

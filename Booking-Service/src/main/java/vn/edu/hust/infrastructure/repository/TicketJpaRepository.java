@@ -6,7 +6,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.edu.hust.infrastructure.entity.TicketEntity;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -16,5 +15,9 @@ public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
     @Query("SELECT t FROM TicketEntity t WHERE t.flightId = :flightId AND t.status = 0")
     List<TicketEntity> findAvailableByFlightId(@Param("flightId") Long flightId);
 
-    TicketEntity findBySeatId(Long seatId);
+    TicketEntity findByTicketId(Long ticketId);
+
+    List<TicketEntity> findByBookingId(String bookingId);
+
+    List<TicketEntity> findByStatus(vn.edu.hust.domain.model.enumeration.TicketStatus status);
 }

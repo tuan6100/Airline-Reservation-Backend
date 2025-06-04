@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import vn.edu.hust.application.dto.command.*;
 import vn.edu.hust.application.dto.query.TicketDTO;
-import vn.edu.hust.application.dto.query.TicketSummaryDTO;
 import vn.edu.hust.application.dto.query.*;
 
 import java.util.List;
@@ -71,5 +70,11 @@ public class TicketApplicationService {
         GetAvailableTicketsQuery query = new GetAvailableTicketsQuery();
         query.setFlightId(flightId);
         return queryGateway.query(query, ResponseTypes.multipleInstancesOf(TicketDTO.class));
+    }
+
+    public CompletableFuture<List<TicketSummaryDTO>> getTicketsByCustomer(Long customerId) {
+        GetTicketsByCustomerQuery query = new GetTicketsByCustomerQuery();
+        query.setCustomerId(customerId);
+        return queryGateway.query(query, ResponseTypes.multipleInstancesOf(TicketSummaryDTO.class));
     }
 }

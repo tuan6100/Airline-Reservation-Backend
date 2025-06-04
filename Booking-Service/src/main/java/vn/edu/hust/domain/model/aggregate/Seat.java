@@ -9,12 +9,15 @@ import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.modelling.command.AggregateLifecycle;
 import org.axonframework.spring.stereotype.Aggregate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import vn.edu.hust.application.dto.command.HoldSeatCommand;
 import vn.edu.hust.application.dto.command.ReleaseSeatCommand;
 import vn.edu.hust.domain.event.SeatHeldEvent;
 import vn.edu.hust.domain.event.SeatReleasedEvent;
 import vn.edu.hust.domain.model.enumeration.SeatStatus;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Aggregate
@@ -33,6 +36,10 @@ public class Seat {
     private Long heldByCustomerId;
     private Integer version;
 
+    @Value("${domain.seat.hold-util}")
+    private CharSequence seatHoldUtils;
+
+
     @CommandHandler
     public void handle(HoldSeatCommand command) {
         if (status != SeatStatus.AVAILABLE) {
@@ -42,8 +49,8 @@ public class Seat {
                 throw new IllegalStateException("Seat is not available for holding");
             }
         }
-        LocalDateTime holdUntil = LocalDateTime.now().plusMinutes(
-                command.getHoldDurationMinutes() != null ? command.getHoldDurationMinutes() : 15
+        LocalDateTime holdUntil = LocalDateTime.now().plus(
+                Duration.parse(seatHoldUtils)
         );
         AggregateLifecycle.apply(new SeatHeldEvent(
                 seatId,

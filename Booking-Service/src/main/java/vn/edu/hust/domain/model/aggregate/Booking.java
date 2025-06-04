@@ -8,14 +8,15 @@ import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.modelling.command.AggregateLifecycle;
 import org.axonframework.spring.stereotype.Aggregate;
-import vn.edu.hust.application.dto.command.CancelBookingCommand;
-import vn.edu.hust.application.dto.command.ConfirmBookingCommand;
-import vn.edu.hust.application.dto.command.CreateBookingCommand;
+import org.springframework.beans.factory.annotation.Value;
+import vn.edu.hust.application.dto.command.*;
 import vn.edu.hust.domain.event.*;
 import vn.edu.hust.domain.model.enumeration.BookingStatus;
 import vn.edu.hust.domain.model.enumeration.CancellationReason;
 import vn.edu.hust.domain.model.valueobj.SeatReservation;
+import vn.edu.hust.domain.model.valueobj.TicketReservation;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -31,27 +32,86 @@ public class Booking {
     private String bookingId;
     private Long customerId;
     private Set<SeatReservation> seatReservations = new HashSet<>();
+    private Set<TicketReservation> ticketReservations = new HashSet<>();
     private BookingStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime expiresAt;
+    private Long flightId;
+    private LocalDateTime flightDepartureTime;
+    private Double totalAmount;
+    private String currency;
+
+    @Value("${domain.ticket.hold-util}")
+    private CharSequence ticketHoldUtils;
 
     @CommandHandler
     public Booking(CreateBookingCommand command) {
-        String bookingId = UUID.randomUUID().toString();
-        Set<SeatReservation> reservations = command.getSeatSelections().stream()
+        String bookingId = command.getBookingId() != null ?
+                command.getBookingId() : UUID.randomUUID().toString();
+
+        Set<SeatReservation> seatReservations = command.getSeatSelections().stream()
                 .map(selection -> new SeatReservation(
                         selection.getSeatId(),
-                        null,
+                        command.getFlightId(), // Thêm flightId
                         selection.getSeatClassId(),
                         selection.getAmount(),
                         selection.getCurrency()
                 ))
                 .collect(Collectors.toSet());
+        double totalAmount = command.getSeatSelections().stream()
+                .mapToDouble(CreateBookingCommand.SeatSelectionRequest::getAmount)
+                .sum();
+        LocalDateTime expiresAt = LocalDateTime.now().plus(
+                Duration.parse(ticketHoldUtils)
+        );
         AggregateLifecycle.apply(new BookingCreatedEvent(
                 bookingId,
                 command.getCustomerId(),
-                reservations,
-                LocalDateTime.now().plusMinutes(15)
+                seatReservations,
+                expiresAt,
+                command.getFlightId(),
+                command.getFlightDepartureTime(),
+                totalAmount,
+                command.getCurrency() != null ? command.getCurrency() : "VND"
+        ));
+    }
+
+    @CommandHandler
+    public void handle(AddTicketToBookingCommand command) {
+        if (status != BookingStatus.PENDING) {
+            throw new IllegalStateException("Can only add tickets to pending bookings");
+        }
+
+        if (isExpired()) {
+            throw new IllegalStateException("Booking has expired");
+        }
+        boolean ticketExists = ticketReservations.stream()
+                .anyMatch(tr -> tr.getTicketId().equals(command.getTicketId()));
+        if (ticketExists) {
+            throw new IllegalStateException("Ticket already added to booking");
+        }
+        AggregateLifecycle.apply(new TicketAddedToBookingEvent(
+                bookingId,
+                command.getTicketId(),
+                command.getSeatId(),
+                command.getPrice(),
+                command.getCurrency()
+        ));
+    }
+
+    @CommandHandler
+    public void handle(RemoveTicketFromBookingCommand command) {
+        if (status != BookingStatus.PENDING) {
+            throw new IllegalStateException("Can only remove tickets from pending bookings");
+        }
+        boolean ticketExists = ticketReservations.stream()
+                .anyMatch(tr -> tr.getTicketId().equals(command.getTicketId()));
+        if (!ticketExists) {
+            throw new IllegalStateException("Ticket not found in booking");
+        }
+        AggregateLifecycle.apply(new TicketRemovedFromBookingEvent(
+                bookingId,
+                command.getTicketId()
         ));
     }
 
@@ -60,11 +120,12 @@ public class Booking {
         if (status != BookingStatus.PENDING) {
             throw new IllegalStateException("Booking must be in PENDING state to be confirmed");
         }
-
         if (isExpired()) {
             throw new IllegalStateException("Booking has expired");
         }
-
+        if (ticketReservations.isEmpty()) {
+            throw new IllegalStateException("Cannot confirm booking without tickets");
+        }
         AggregateLifecycle.apply(new BookingConfirmedEvent(bookingId));
     }
 
@@ -78,6 +139,15 @@ public class Booking {
         AggregateLifecycle.apply(new BookingCancelledEvent(bookingId, reason));
     }
 
+    @CommandHandler
+    public void handle(ExpireBookingCommand command) {
+        if (status != BookingStatus.PENDING) {
+            return;
+        }
+
+        AggregateLifecycle.apply(new BookingExpiredEvent(bookingId));
+    }
+
     @EventSourcingHandler
     public void on(BookingCreatedEvent event) {
         this.bookingId = event.bookingId();
@@ -86,6 +156,29 @@ public class Booking {
         this.status = BookingStatus.PENDING;
         this.createdAt = LocalDateTime.now();
         this.expiresAt = event.expiresAt();
+        this.flightId = event.flightId();
+        this.flightDepartureTime = event.flightDepartureTime();
+        this.totalAmount = event.totalAmount();
+        this.currency = event.currency();
+    }
+
+    @EventSourcingHandler
+    public void on(TicketAddedToBookingEvent event) {
+        TicketReservation ticketReservation = new TicketReservation(
+                event.ticketId(),
+                event.seatId(),
+                event.price(),
+                event.currency()
+        );
+        this.ticketReservations.add(ticketReservation);
+        recalculateTotalAmount();
+    }
+
+    @EventSourcingHandler
+    public void on(TicketRemovedFromBookingEvent event) {
+        this.ticketReservations.removeIf(tr -> tr.getTicketId().equals(event.ticketId()));
+
+        recalculateTotalAmount();
     }
 
     @EventSourcingHandler
@@ -103,7 +196,39 @@ public class Booking {
         this.status = BookingStatus.EXPIRED;
     }
 
+    // Helper methods
     private boolean isExpired() {
         return LocalDateTime.now().isAfter(expiresAt);
+    }
+
+    private void recalculateTotalAmount() {
+        double seatTotal = seatReservations.stream()
+                .mapToDouble(SeatReservation::amount)
+                .sum();
+
+        double ticketTotal = ticketReservations.stream()
+                .mapToDouble(TicketReservation::getPrice)
+                .sum();
+
+        this.totalAmount = seatTotal + ticketTotal;
+    }
+
+    // Getter methods for business logic
+    public int getTotalSeats() {
+        return seatReservations.size();
+    }
+
+    public int getTotalTickets() {
+        return ticketReservations.size();
+    }
+
+    public boolean hasTicket(Long ticketId) {
+        return ticketReservations.stream()
+                .anyMatch(tr -> tr.getTicketId().equals(ticketId));
+    }
+
+    public boolean hasSeat(Long seatId) {
+        return seatReservations.stream()
+                .anyMatch(sr -> sr.seatId().equals(seatId));
     }
 }

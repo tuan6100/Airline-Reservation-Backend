@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import vn.edu.hust.domain.model.enumeration.SeatStatus;
-import vn.edu.hust.domain.model.valueobj.SeatClass;
 
 @Getter
 @Setter
@@ -20,7 +19,7 @@ public class SeatEntity {
     @Column(name = "seat_id")
     private Long seatId;
 
-    @ManyToOne()
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seat_class_id")
     private SeatClassEntity seatClass;
 
@@ -30,10 +29,19 @@ public class SeatEntity {
     @Column(name = "seat_code", nullable = false)
     private String seatCode;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private SeatStatus status;
+    private SeatStatus status = SeatStatus.AVAILABLE;
 
     @Version
     @Column(name = "version")
     private Integer version = 0;
+
+    public Long getSeatClassId() {
+        return seatClass != null ? seatClass.getId().longValue() : null;
+    }
+
+    public boolean isAvailable() {
+        return status == SeatStatus.AVAILABLE;
+    }
 }

@@ -7,10 +7,12 @@ import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.modelling.command.AggregateLifecycle;
 import org.axonframework.spring.stereotype.Aggregate;
+import org.springframework.beans.factory.annotation.Value;
 import vn.edu.hust.application.dto.command.*;
 import vn.edu.hust.domain.event.*;
 import vn.edu.hust.domain.model.enumeration.TicketStatus;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -29,6 +31,9 @@ public class Ticket {
     private LocalDateTime holdUntil;
     private Long heldByCustomerId;
     private String bookingId;
+
+    @Value("${domain.ticket.hold-util}")
+    private CharSequence ticketHoldUtils;
 
     @CommandHandler
     public Ticket(CreateTicketCommand command) {
@@ -56,11 +61,9 @@ public class Ticket {
                 throw new IllegalStateException("Ticket is not available for holding");
             }
         }
-
-        LocalDateTime holdUntil = LocalDateTime.now().plusMinutes(
-                command.getHoldDurationMinutes() != null ? command.getHoldDurationMinutes() : 15
+        LocalDateTime holdUntil = LocalDateTime.now().plus(
+                Duration.parse(ticketHoldUtils)
         );
-
         AggregateLifecycle.apply(new TicketHeldEvent(
                 ticketId,
                 flightId,

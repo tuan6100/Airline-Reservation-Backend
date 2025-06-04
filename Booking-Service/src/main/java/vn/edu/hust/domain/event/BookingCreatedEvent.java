@@ -9,5 +9,9 @@ public record BookingCreatedEvent(
         String bookingId,
         Long customerId,
         Set<SeatReservation> seatReservations,
-        LocalDateTime expiresAt
+        LocalDateTime expiresAt,
+        Long flightId,
+        LocalDateTime flightDepartureTime,
+        Double totalAmount,
+        String currency
 ) {}

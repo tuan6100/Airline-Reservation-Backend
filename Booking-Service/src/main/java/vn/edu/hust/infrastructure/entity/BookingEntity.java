@@ -24,6 +24,7 @@ public class BookingEntity {
     @Column(name = "customer_id")
     private Long customerId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private BookingStatus status;
 
@@ -33,9 +34,29 @@ public class BookingEntity {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
-    @OneToMany()
-    @JoinColumn(name = "ticket_id")
+    @Column(name = "flight_id")
+    private Long flightId;
+
+    @Column(name = "flight_departure_time")
+    private LocalDateTime flightDepartureTime;
+
+    @Column(name = "total_amount")
+    private Double totalAmount;
+
+    @Column(name = "currency")
+    private String currency;
+
+    @Column(name = "seat_count")
+    private Integer seatCount;
+
+    @Column(name = "ticket_count")
+    private Integer ticketCount;
+
+    @OneToMany(mappedBy = "bookingId", fetch = FetchType.LAZY)
     private Set<TicketEntity> tickets;
 
-
+    // Helper methods
+    public boolean isExpired() {
+        return expiresAt != null && LocalDateTime.now().isAfter(expiresAt);
+    }
 }
