@@ -1,6 +1,4 @@
 package vn.edu.hust.domain.event;
 
 
-import vn.edu.hust.domain.model.valueobj.BookingId;
-
-public record BookingExpiredEvent(BookingId bookingId) {}
+public record BookingExpiredEvent(String bookingId) {}

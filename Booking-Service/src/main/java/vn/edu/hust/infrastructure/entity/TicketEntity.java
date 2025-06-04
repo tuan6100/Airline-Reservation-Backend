@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import vn.edu.hust.domain.model.enumeration.TicketStatus;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -15,7 +16,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "Ticket")
+@Table(name = "\"Ticket\"")
 public class TicketEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,14 +32,11 @@ public class TicketEntity {
     @Column(name = "flight_departure_time")
     private LocalDateTime flightDepartureTime;
 
-    @Column(name = "seat_id", nullable = false)
-    private Long seatId;
-
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "status")
-    private Integer status = 0;
+    private TicketStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seat_id", insertable = false, updatable = false)

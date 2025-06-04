@@ -74,7 +74,7 @@ public final class SeatClass {
     }
 
     /**
-     * Create a SeatClass from a seat class ID
+     * Create a SeatClassEntity from a seat class ID
      */
     public static SeatClass fromId(SeatClassId seatClassId) {
         switch (seatClassId.value().intValue()) {

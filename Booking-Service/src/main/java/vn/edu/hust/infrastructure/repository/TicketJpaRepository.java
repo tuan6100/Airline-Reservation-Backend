@@ -17,7 +17,4 @@ public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
     List<TicketEntity> findAvailableByFlightId(@Param("flightId") Long flightId);
 
     TicketEntity findBySeatId(Long seatId);
-
-    @Query("SELECT t FROM TicketEntity t WHERE t.status = 1 AND t.seat.holdUntil < :now")
-    List<TicketEntity> findExpiredHolds(@Param("now") LocalDateTime now);
 }

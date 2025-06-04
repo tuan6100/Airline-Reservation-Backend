@@ -1,10 +1,8 @@
-// TicketMapper.java
 package vn.edu.hust.infrastructure.mapper;
 
 import org.springframework.stereotype.Component;
 import vn.edu.hust.domain.model.aggregate.Ticket;
 import vn.edu.hust.domain.model.enumeration.TicketStatus;
-import vn.edu.hust.domain.model.valueobj.*;
 import vn.edu.hust.infrastructure.entity.TicketEntity;
 
 @Component
@@ -14,29 +12,14 @@ public class TicketMapper {
         if (entity == null) {
             return null;
         }
-
         Ticket ticket = new Ticket();
-        if (entity.getTicketId() != null) {
-            ticket.setTicketId(new TicketId(entity.getTicketId()));
-        }
-        ticket.setTicketCode(entity.getTicketCode());
-        ticket.setFlightId(new FlightId(entity.getFlightId()));
-        ticket.setFlightDepartureTime(entity.getFlightDepartureTime());
-        ticket.setSeatId(new SeatId(entity.getSeatId()));
-        ticket.setCreatedAt(entity.getCreatedAt());
-        ticket.setStatus(TicketStatus.fromValue(entity.getStatus()));
-
-        // Map seat details if available
-        if (entity.getSeat() != null) {
-            var seatEntity = entity.getSeat();
-            ticket.setSeatDetails(new SeatDetails(
-                    new SeatId(seatEntity.getSeatId()),
-                    new SeatClassId(seatEntity.getSeatClassId()),
-                    new AircraftId(seatEntity.getAircraftId()),
-                    seatEntity.getSeatCode(),
-                    null // Price will be calculated separately
-            ));
-        }
+        setField(ticket, "ticketId", entity.getTicketId());
+        setField(ticket, "ticketCode", entity.getTicketCode().toString());
+        setField(ticket, "flightId", entity.getFlightId());
+        setField(ticket, "flightDepartureTime", entity.getFlightDepartureTime());
+        setField(ticket, "seatId", entity.getSeatId());
+        setField(ticket, "status", TicketStatus.fromValue(entity.getStatus()));
+        setField(ticket, "createdAt", entity.getCreatedAt());
 
         return ticket;
     }
@@ -47,18 +30,24 @@ public class TicketMapper {
         }
 
         TicketEntity entity = new TicketEntity();
-        if (domain.getTicketId() != null) {
-            entity.setTicketId(domain.getTicketId().value());
-        }
-        entity.setTicketCode(domain.getTicketCode());
-        entity.setFlightId(domain.getFlightId().value());
+        entity.setTicketId(domain.getTicketId());
+        entity.setTicketCode(java.util.UUID.fromString(domain.getTicketCode()));
+        entity.setFlightId(domain.getFlightId());
         entity.setFlightDepartureTime(domain.getFlightDepartureTime());
-        entity.setSeatId(domain.getSeatId().value());
-        entity.setCreatedAt(domain.getCreatedAt());
+        entity.setSeatId(domain.getSeatId());
         entity.setStatus(domain.getStatus().getValue());
+        entity.setCreatedAt(domain.getCreatedAt());
 
         return entity;
     }
-}
 
-// SeatMapper.java - Updated
+    private void setField(Object target, String fieldName, Object value) {
+        try {
+            var field = target.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(target, value);
+        } catch (Exception e) {
+            // Handle exception appropriately
+        }
+    }
+}

@@ -5,32 +5,37 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import vn.edu.hust.domain.model.enumeration.BookingStatus;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Set;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "Booking")
+@Table(name = "\"Booking\"")
 public class BookingEntity {
     @Id
-    private String id;
+    @Column(name = "booking_id")
+    private String bookingId;
 
+    @Column(name = "customer_id")
     private Long customerId;
 
-    private String status;
+    @Column(name = "status")
+    private BookingStatus status;
 
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
-    @Version
-    private Integer version;
+    @OneToMany()
+    @JoinColumn(name = "ticket_id")
+    private Set<TicketEntity> tickets;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "booking_id")
-    private Set<SeatReservationEntity> seatReservations = new HashSet<>();
+
 }

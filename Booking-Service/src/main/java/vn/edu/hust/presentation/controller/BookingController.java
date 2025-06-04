@@ -9,6 +9,7 @@ import vn.edu.hust.application.dto.command.CreateBookingCommand;
 import vn.edu.hust.application.dto.query.BookingDTO;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -17,34 +18,34 @@ public class BookingController {
     @Autowired private BookingApplicationService bookingService;
 
     @PostMapping
-    public ResponseEntity<BookingDTO> createBooking(@RequestBody CreateBookingCommand command) {
-        BookingDTO booking = bookingService.createBooking(command);
-        return new ResponseEntity<>(booking, HttpStatus.CREATED);
+    public CompletableFuture<ResponseEntity<String>> createBooking(@RequestBody CreateBookingCommand command) {
+        return bookingService.createBooking(command)
+                .thenApply(bookingId -> new ResponseEntity<>(bookingId, HttpStatus.CREATED));
     }
 
     @GetMapping("/{bookingId}")
-    public ResponseEntity<BookingDTO> getBooking(@PathVariable String bookingId) {
-        BookingDTO booking = bookingService.getBooking(bookingId);
-        return ResponseEntity.ok(booking);
+    public CompletableFuture<ResponseEntity<BookingDTO>> getBooking(@PathVariable String bookingId) {
+        return bookingService.getBooking(bookingId)
+                .thenApply(ResponseEntity::ok);
     }
 
     @PostMapping("/{bookingId}/confirm")
-    public ResponseEntity<BookingDTO> confirmBooking(@PathVariable String bookingId) {
-        BookingDTO booking = bookingService.confirmBooking(bookingId);
-        return ResponseEntity.ok(booking);
+    public CompletableFuture<ResponseEntity<Void>> confirmBooking(@PathVariable String bookingId) {
+        return bookingService.confirmBooking(bookingId)
+                .thenApply(result -> ResponseEntity.ok().build());
     }
 
     @PostMapping("/{bookingId}/cancel")
-    public ResponseEntity<BookingDTO> cancelBooking(
+    public CompletableFuture<ResponseEntity<Void>> cancelBooking(
             @PathVariable String bookingId,
             @RequestParam String reason) {
-        BookingDTO booking = bookingService.cancelBooking(bookingId, reason);
-        return ResponseEntity.ok(booking);
+        return bookingService.cancelBooking(bookingId, reason)
+                .thenApply(result -> ResponseEntity.ok().build());
     }
 
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<List<BookingDTO>> getBookingsByCustomer(@PathVariable Long customerId) {
-        List<BookingDTO> bookings = bookingService.getBookingsByCustomer(customerId);
-        return ResponseEntity.ok(bookings);
+    public CompletableFuture<ResponseEntity<List<BookingDTO>>> getBookingsByCustomer(@PathVariable Long customerId) {
+        return bookingService.getBookingsByCustomer(customerId)
+                .thenApply(ResponseEntity::ok);
     }
 }

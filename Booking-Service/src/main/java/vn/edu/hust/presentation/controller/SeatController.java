@@ -10,6 +10,7 @@ import vn.edu.hust.application.service.BookingApplicationService;
 import vn.edu.hust.application.dto.query.SeatDTO;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/flights/{flightId}/seats")
@@ -18,8 +19,7 @@ public class SeatController {
     @Autowired private BookingApplicationService bookingService;
 
     @GetMapping("/available")
-    public ResponseEntity<List<SeatDTO>> getAvailableSeats(@PathVariable Long flightId) {
-        List<SeatDTO> seats = bookingService.getAvailableSeats(flightId);
-        return ResponseEntity.ok(seats);
+    public CompletableFuture<ResponseEntity<List<SeatDTO>>> getAvailableSeats(@PathVariable Long flightId) {
+        return bookingService.getAvailableSeats(flightId).thenApply(ResponseEntity::ok);
     }
 }

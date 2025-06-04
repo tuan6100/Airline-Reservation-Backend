@@ -1,12 +1,13 @@
 package vn.edu.hust.domain.event;
 
-import vn.edu.hust.domain.model.valueobj.BookingId;
-import vn.edu.hust.domain.model.valueobj.CustomerId;
 import vn.edu.hust.domain.model.valueobj.SeatReservation;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
+import java.util.Set;
 
-public record BookingCreatedEvent(BookingId bookingId, CustomerId customerId,
-                                  Collection<SeatReservation> seatReservations,
-                                  LocalDateTime expiresAt) {}
+public record BookingCreatedEvent(
+        String bookingId,
+        Long customerId,
+        Set<SeatReservation> seatReservations,
+        LocalDateTime expiresAt
+) {}

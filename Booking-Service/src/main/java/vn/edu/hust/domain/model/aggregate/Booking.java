@@ -3,21 +3,24 @@ package vn.edu.hust.domain.model.aggregate;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.axonframework.commandhandling.CommandHandler;
+import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
+import org.axonframework.modelling.command.AggregateLifecycle;
 import org.axonframework.spring.stereotype.Aggregate;
+import vn.edu.hust.application.dto.command.CancelBookingCommand;
+import vn.edu.hust.application.dto.command.ConfirmBookingCommand;
+import vn.edu.hust.application.dto.command.CreateBookingCommand;
 import vn.edu.hust.domain.event.*;
 import vn.edu.hust.domain.model.enumeration.BookingStatus;
 import vn.edu.hust.domain.model.enumeration.CancellationReason;
-import vn.edu.hust.domain.model.valueobj.BookingId;
-import vn.edu.hust.domain.model.valueobj.CustomerId;
-import vn.edu.hust.domain.model.valueobj.SeatId;
 import vn.edu.hust.domain.model.valueobj.SeatReservation;
-import vn.edu.hust.infrastructure.event.DomainEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Aggregate
 @NoArgsConstructor
@@ -25,82 +28,82 @@ import java.util.Set;
 @Setter
 public class Booking {
     @AggregateIdentifier
-    private BookingId bookingId;
-    private CustomerId customerId;
-    private Set<SeatReservation> seatReservations;
+    private String bookingId;
+    private Long customerId;
+    private Set<SeatReservation> seatReservations = new HashSet<>();
     private BookingStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime expiresAt;
 
-
-    public static Booking create(BookingId bookingId, CustomerId customerId, List<SeatReservation> seatReservations) {
-        Booking booking = new Booking();
-        booking.bookingId = bookingId;
-        booking.customerId = customerId;
-        booking.seatReservations = new HashSet<>(seatReservations);
-        booking.status = BookingStatus.PENDING;
-        booking.createdAt = LocalDateTime.now();
-        booking.expiresAt = LocalDateTime.now().plusMinutes(15);
-
-        // Raise domain event
-        booking.registerEvent(new BookingCreatedEvent(bookingId, customerId, seatReservations, booking.expiresAt));
-
-        return booking;
+    @CommandHandler
+    public Booking(CreateBookingCommand command) {
+        String bookingId = UUID.randomUUID().toString();
+        Set<SeatReservation> reservations = command.getSeatSelections().stream()
+                .map(selection -> new SeatReservation(
+                        selection.getSeatId(),
+                        null,
+                        selection.getSeatClassId(),
+                        selection.getAmount(),
+                        selection.getCurrency()
+                ))
+                .collect(Collectors.toSet());
+        AggregateLifecycle.apply(new BookingCreatedEvent(
+                bookingId,
+                command.getCustomerId(),
+                reservations,
+                LocalDateTime.now().plusMinutes(15)
+        ));
     }
 
-    public void confirm() {
+    @CommandHandler
+    public void handle(ConfirmBookingCommand command) {
         if (status != BookingStatus.PENDING) {
             throw new IllegalStateException("Booking must be in PENDING state to be confirmed");
         }
-        status = BookingStatus.CONFIRMED;
-        registerEvent(new BookingConfirmedEvent(bookingId));
+
+        if (isExpired()) {
+            throw new IllegalStateException("Booking has expired");
+        }
+
+        AggregateLifecycle.apply(new BookingConfirmedEvent(bookingId));
     }
 
-    public void cancel(CancellationReason reason) {
+    @CommandHandler
+    public void handle(CancelBookingCommand command) {
         if (status == BookingStatus.CANCELLED) {
             throw new IllegalStateException("Booking is already cancelled");
         }
-        status = BookingStatus.CANCELLED;
-        registerEvent(new BookingCancelledEvent(bookingId, reason));
+
+        CancellationReason reason = CancellationReason.valueOf(command.getReason());
+        AggregateLifecycle.apply(new BookingCancelledEvent(bookingId, reason));
     }
 
-    public void expire() {
-        if (status != BookingStatus.PENDING) {
-            throw new IllegalStateException("Only pending bookings can expire");
-        }
-
-        status = BookingStatus.EXPIRED;
-        registerEvent(new BookingExpiredEvent(bookingId));
+    @EventSourcingHandler
+    public void on(BookingCreatedEvent event) {
+        this.bookingId = event.bookingId();
+        this.customerId = event.customerId();
+        this.seatReservations = new HashSet<>(event.seatReservations());
+        this.status = BookingStatus.PENDING;
+        this.createdAt = LocalDateTime.now();
+        this.expiresAt = event.expiresAt();
     }
 
-    public boolean isExpired() {
+    @EventSourcingHandler
+    public void on(BookingConfirmedEvent event) {
+        this.status = BookingStatus.CONFIRMED;
+    }
+
+    @EventSourcingHandler
+    public void on(BookingCancelledEvent event) {
+        this.status = BookingStatus.CANCELLED;
+    }
+
+    @EventSourcingHandler
+    public void on(BookingExpiredEvent event) {
+        this.status = BookingStatus.EXPIRED;
+    }
+
+    private boolean isExpired() {
         return LocalDateTime.now().isAfter(expiresAt);
-    }
-
-    public void addSeatReservation(SeatReservation reservation) {
-        if (status != BookingStatus.PENDING) {
-            throw new IllegalStateException("Cannot modify non-pending booking");
-        }
-
-        seatReservations.add(reservation);
-        registerEvent(new SeatAddedToBookingEvent(bookingId, reservation.seatId()));
-    }
-
-    // Remove seat reservation
-    public void removeSeatReservation(SeatId seatId) {
-        if (status != BookingStatus.PENDING) {
-            throw new IllegalStateException("Cannot modify non-pending booking");
-        }
-
-        boolean removed = seatReservations.removeIf(sr -> sr.seatId().equals(seatId));
-
-        if (removed) {
-            registerEvent(new SeatRemovedFromBookingEvent(bookingId, seatId));
-        }
-    }
-
-    // Private helper for domain events
-    private void registerEvent(Object event) {
-        DomainEventPublisher.instance().publish(event);
     }
 }

@@ -1,5 +1,6 @@
 package vn.edu.hust.infrastructure.mapper;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import vn.edu.hust.domain.model.aggregate.Seat;
 import vn.edu.hust.domain.model.valueobj.AircraftId;
@@ -7,8 +8,13 @@ import vn.edu.hust.domain.model.valueobj.SeatClassId;
 import vn.edu.hust.domain.model.valueobj.SeatId;
 import vn.edu.hust.infrastructure.entity.SeatEntity;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 @Component
 public class SeatMapper {
+
+    @Value("${domain.seat.hold-util}") private CharSequence setHoldUntil;
 
     public Seat toDomain(SeatEntity entity) {
         if (entity == null) {
@@ -16,14 +22,13 @@ public class SeatMapper {
         }
 
         Seat seat = new Seat();
-        seat.setSeatId(new SeatId(entity.getSeatId()));
-        seat.setSeatClassId(new SeatClassId(entity.getSeatClassId()));
-        seat.setAircraftId(new AircraftId(entity.getAircraftId()));
+        seat.setSeatId(entity.getSeatId());
+        seat.setSeatClassId(entity.getSeatClassId());
+        seat.setAircraftId(entity.getAircraftId());
         seat.setSeatCode(entity.getSeatCode());
-        seat.setIsAvailable(entity.getIsAvailable());
-        seat.setHoldUntil(entity.getHoldUntil());
+        seat.setStatus(entity.getStatus());
+        seat.setHoldUntil(LocalDateTime.parse(setHoldUntil));
         seat.setVersion(entity.getVersion());
-
         return seat;
     }
 
@@ -31,18 +36,16 @@ public class SeatMapper {
         if (domain == null) {
             return null;
         }
-
         SeatEntity entity = new SeatEntity();
         if (domain.getSeatId() != null) {
-            entity.setSeatId(domain.getSeatId().value());
+            entity.setSeatId(domain.getSeatId());
         }
-        entity.setSeatClassId(domain.getSeatClassId().value());
-        entity.setAircraftId(domain.getAircraftId().value());
+        entity.setSeatClassId(domain.getSeatClassId());
+        entity.setAircraftId(domain.getAircraftId());
         entity.setSeatCode(domain.getSeatCode());
-        entity.setIsAvailable(domain.getIsAvailable());
-        entity.setHoldUntil(domain.getHoldUntil());
+        entity.setStatus(domain.getStatus());
         entity.setVersion(domain.getVersion());
-
         return entity;
     }
+
 }
