@@ -48,18 +48,17 @@ public class Booking {
     public Booking(CreateBookingCommand command) {
         String bookingId = command.getBookingId() != null ?
                 command.getBookingId() : UUID.randomUUID().toString();
-
-        Set<SeatReservation> seatReservations = command.getSeatSelections().stream()
+        Set<SeatReservation> seatReservations = command.getTicketSelections().stream()
                 .map(selection -> new SeatReservation(
                         selection.getSeatId(),
-                        command.getFlightId(), // Thêm flightId
+                        command.getFlightId(),
                         selection.getSeatClassId(),
-                        selection.getAmount(),
+                        selection.getPrice(),
                         selection.getCurrency()
                 ))
                 .collect(Collectors.toSet());
-        double totalAmount = command.getSeatSelections().stream()
-                .mapToDouble(CreateBookingCommand.SeatSelectionRequest::getAmount)
+        double totalAmount = command.getTicketSelections().stream()
+                .mapToDouble(CreateBookingCommand.TicketSelectionRequest::getPrice)
                 .sum();
         LocalDateTime expiresAt = LocalDateTime.now().plus(
                 Duration.parse(ticketHoldUtils)
@@ -74,6 +73,15 @@ public class Booking {
                 totalAmount,
                 command.getCurrency() != null ? command.getCurrency() : "VND"
         ));
+        command.getTicketSelections().forEach(selection -> {
+            AggregateLifecycle.apply(new TicketAddedToBookingEvent(
+                    bookingId,
+                    selection.getTicketId(),
+                    selection.getSeatId(),
+                    selection.getPrice(),
+                    selection.getCurrency()
+            ));
+        });
     }
 
     @CommandHandler
@@ -134,7 +142,6 @@ public class Booking {
         if (status == BookingStatus.CANCELLED) {
             throw new IllegalStateException("Booking is already cancelled");
         }
-
         CancellationReason reason = CancellationReason.valueOf(command.getReason());
         AggregateLifecycle.apply(new BookingCancelledEvent(bookingId, reason));
     }
@@ -144,7 +151,6 @@ public class Booking {
         if (status != BookingStatus.PENDING) {
             return;
         }
-
         AggregateLifecycle.apply(new BookingExpiredEvent(bookingId));
     }
 
@@ -196,7 +202,6 @@ public class Booking {
         this.status = BookingStatus.EXPIRED;
     }
 
-    // Helper methods
     private boolean isExpired() {
         return LocalDateTime.now().isAfter(expiresAt);
     }
@@ -213,7 +218,6 @@ public class Booking {
         this.totalAmount = seatTotal + ticketTotal;
     }
 
-    // Getter methods for business logic
     public int getTotalSeats() {
         return seatReservations.size();
     }

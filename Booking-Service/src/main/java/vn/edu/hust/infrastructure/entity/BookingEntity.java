@@ -55,7 +55,13 @@ public class BookingEntity {
     @OneToMany(mappedBy = "bookingId", fetch = FetchType.LAZY)
     private Set<TicketEntity> tickets;
 
-    // Helper methods
+    @Version
+    @Column(name = "version")
+    private Integer version = 0;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     public boolean isExpired() {
         return expiresAt != null && LocalDateTime.now().isAfter(expiresAt);
     }

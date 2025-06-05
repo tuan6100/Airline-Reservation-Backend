@@ -46,6 +46,13 @@ public class TicketEntity {
     @Column(name = "booking_id")
     private String bookingId;
 
+    @Version
+    @Column(name = "version")
+    private Integer version = 0;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     public Long getSeatId() {
         return seat != null ? seat.getSeatId() : null;
     }

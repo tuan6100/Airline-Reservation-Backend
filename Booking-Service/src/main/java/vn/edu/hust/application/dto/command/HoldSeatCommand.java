@@ -10,5 +10,6 @@ public class HoldSeatCommand {
     @TargetAggregateIdentifier
     private Long seatId;
     private Long customerId;
+    private Long flightId;
     private Integer holdDurationMinutes;
 }

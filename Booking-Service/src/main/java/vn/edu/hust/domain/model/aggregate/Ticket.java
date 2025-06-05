@@ -2,8 +2,10 @@ package vn.edu.hust.domain.model.aggregate;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.deadline.DeadlineManager;
+import org.axonframework.deadline.annotation.DeadlineHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.modelling.command.AggregateLifecycle;
@@ -21,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Aggregate
 @NoArgsConstructor
 @Getter
@@ -36,6 +39,7 @@ public class Ticket {
     private LocalDateTime holdUntil;
     private Long heldByCustomerId;
     private String bookingId;
+    private String seatCode;
 
     @Value("${domain.ticket.hold-util}")
     private CharSequence ticketHoldUtils;
@@ -43,7 +47,7 @@ public class Ticket {
     @Autowired
     private DeadlineManager deadlineManager;
 
-    private HashMap<String, String> deadlineMap;
+    private Map<String, String> deadlineMap = new HashMap<>();
 
     @CommandHandler
     public Ticket(CreateTicketCommand command) {
@@ -64,9 +68,7 @@ public class Ticket {
     public void handle(HoldTicketCommand command) {
         if (status != TicketStatus.AVAILABLE) {
             if (status == TicketStatus.HELD && isHoldExpired()) {
-                AggregateLifecycle.apply(new TicketReleasedEvent(
-                        ticketId, flightId, seatId, LocalDateTime.now()
-                ));
+                handleExpiredHold();
             } else {
                 throw new IllegalStateException("Ticket is not available for holding");
             }
@@ -81,6 +83,13 @@ public class Ticket {
                 command.getCustomerId(),
                 holdUntil
         ));
+        String deadlineName = "ticket-hold-expired-" + ticketId + "-" + System.currentTimeMillis();
+        String scheduledId = deadlineManager.schedule(
+                Instant.from(holdUntil),
+                deadlineName,
+                new TicketHoldExpiredMessage(ticketId, command.getCustomerId())
+        );
+        deadlineMap.put(scheduledId, deadlineName);
     }
 
     @CommandHandler
@@ -88,11 +97,14 @@ public class Ticket {
         if (status != TicketStatus.HELD && status != TicketStatus.AVAILABLE) {
             throw new IllegalStateException("Ticket must be available or held to book");
         }
-
         if (status == TicketStatus.HELD && !command.getCustomerId().equals(heldByCustomerId)) {
             throw new IllegalStateException("Ticket is held by another customer");
         }
-
+        if (!deadlineMap.isEmpty()) {
+            Map.Entry<String, String> entry = deadlineMap.entrySet().iterator().next();
+            deadlineManager.cancelSchedule(entry.getValue(), entry.getKey());
+            deadlineMap.clear();
+        }
         AggregateLifecycle.apply(new TicketBookedEvent(
                 ticketId,
                 flightId,
@@ -111,6 +123,11 @@ public class Ticket {
         if (status == TicketStatus.BOOKED) {
             throw new IllegalStateException("Cannot release a booked ticket");
         }
+        if (!deadlineMap.isEmpty()) {
+            Map.Entry<String, String> entry = deadlineMap.entrySet().iterator().next();
+            deadlineManager.cancelSchedule(entry.getValue(), entry.getKey());
+            deadlineMap.clear();
+        }
         AggregateLifecycle.apply(new TicketReleasedEvent(
                 ticketId, flightId, seatId, LocalDateTime.now()
         ));
@@ -121,6 +138,11 @@ public class Ticket {
         if (status == TicketStatus.CANCELLED) {
             throw new IllegalStateException("Ticket is already cancelled");
         }
+        if (!deadlineMap.isEmpty()) {
+            Map.Entry<String, String> entry = deadlineMap.entrySet().iterator().next();
+            deadlineManager.cancelSchedule(entry.getValue(), entry.getKey());
+            deadlineMap.clear();
+        }
         AggregateLifecycle.apply(new TicketCancelledEvent(
                 ticketId,
                 flightId,
@@ -128,6 +150,31 @@ public class Ticket {
                 command.getReason(),
                 LocalDateTime.now()
         ));
+    }
+
+    @DeadlineHandler
+    public void handle(TicketHoldExpiredMessage message) {
+        if (status == TicketStatus.HELD && isHoldExpired()) {
+            handleExpiredHold();
+        }
+    }
+
+    private void handleExpiredHold() {
+        LocalDateTime now = LocalDateTime.now();
+        AggregateLifecycle.apply(new TicketHoldExpiredEvent(
+                ticketId,
+                ticketCode,
+                heldByCustomerId,
+                seatId,
+                seatCode,
+                flightId,
+                now,
+                holdUntil
+        ));
+        AggregateLifecycle.apply(new TicketReleasedEvent(
+                ticketId, flightId, seatId, now
+        ));
+        deadlineMap.clear();
     }
 
     @EventSourcingHandler
@@ -146,13 +193,6 @@ public class Ticket {
         this.status = TicketStatus.HELD;
         this.holdUntil = event.holdUntil();
         this.heldByCustomerId = event.customerId();
-        String deadlineName = "seat-hold-" + seatId + "-" + System.currentTimeMillis();
-        String scheduledId = deadlineManager.schedule(
-                Instant.from(holdUntil),
-                deadlineName,
-                new TicketHoldExpiredMessage(seatId, event.customerId())
-        );
-        deadlineMap.put(scheduledId, deadlineName);
     }
 
     @EventSourcingHandler
@@ -161,10 +201,6 @@ public class Ticket {
         this.heldByCustomerId = event.customerId();
         this.bookingId = event.bookingId();
         this.holdUntil = null;
-        if (!deadlineMap.isEmpty()) {
-            Map.Entry<String, String> entry = deadlineMap.entrySet().iterator().next();
-            deadlineManager.cancelSchedule(entry.getValue(), entry.getKey());
-        }
     }
 
     @EventSourcingHandler
@@ -173,10 +209,6 @@ public class Ticket {
         this.holdUntil = null;
         this.heldByCustomerId = null;
         this.bookingId = null;
-        if (!deadlineMap.isEmpty()) {
-            Map.Entry<String, String> entry = deadlineMap.entrySet().iterator().next();
-            deadlineManager.cancelSchedule(entry.getValue(), entry.getKey());
-        }
     }
 
     @EventSourcingHandler
@@ -184,11 +216,16 @@ public class Ticket {
         this.status = TicketStatus.CANCELLED;
     }
 
+    @EventSourcingHandler
+    public void on(TicketHoldExpiredEvent event) {
+        Ticket.log.info("Ticket hold expired notification sent for ticket: {}", event.ticketId());
+    }
+
     private boolean isHoldExpired() {
         return holdUntil != null && LocalDateTime.now().isAfter(holdUntil);
     }
 
-    private record TicketHoldExpiredMessage (
+    public record TicketHoldExpiredMessage(
             Long ticketId,
             Long customerId
     ) {}

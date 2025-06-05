@@ -12,11 +12,6 @@ public class OrderServiceEventListener {
     @Autowired
     private BookingApplicationService bookingService;
 
-
-    public OrderServiceEventListener(BookingApplicationService bookingService) {
-        this.bookingService = bookingService;
-    }
-
     @KafkaListener(topics = "order-events.confirmed", groupId = "booking-service")
     public void handleOrderConfirmed(OrderConfirmedEvent event) {
         bookingService.confirmBooking(event.bookingId());

@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import vn.edu.hust.domain.model.enumeration.SeatStatus;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -36,6 +38,9 @@ public class SeatEntity {
     @Version
     @Column(name = "version")
     private Integer version = 0;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     public Long getSeatClassId() {
         return seatClass != null ? seatClass.getId().longValue() : null;

@@ -15,15 +15,16 @@ public class CreateBookingCommand {
     private Long customerId;
     private Long flightId;
     private LocalDateTime flightDepartureTime;
-    private List<SeatSelectionRequest> seatSelections;
+    private List<TicketSelectionRequest> ticketSelections;
     private String currency;
 
     @Data
     @NoArgsConstructor
-    public static class SeatSelectionRequest {
+    public static class TicketSelectionRequest {
+        private Long ticketId;
         private Long seatId;
         private Long seatClassId;
-        private Double amount;
+        private Double price;
         private String currency;
     }
 }

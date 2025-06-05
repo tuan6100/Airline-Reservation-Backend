@@ -6,7 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.edu.hust.application.service.BookingApplicationService;
 import vn.edu.hust.application.dto.command.CreateBookingCommand;
-import vn.edu.hust.application.dto.query.BookingDTO;
+import vn.edu.hust.application.dto.query.*;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -19,35 +19,38 @@ public class BookingController {
     @Autowired
     private BookingApplicationService bookingService;
 
-    @PostMapping
-    public CompletableFuture<ResponseEntity<String>> createBooking(@RequestBody CreateBookingCommand command) {
-        return bookingService.createBooking(command)
-                .thenApply(bookingId -> new ResponseEntity<>(bookingId, HttpStatus.CREATED));
+    @GetMapping("/flights/{flightId}/tickets/availability")
+    public CompletableFuture<ResponseEntity<TicketAvailabilityDTO>> getTicketAvailability(@PathVariable Long flightId) {
+        return bookingService.searchAvailableTickets(flightId)
+                .thenApply(ResponseEntity::ok)
+                .exceptionally(ex -> ResponseEntity.badRequest().build());
     }
 
-    @PostMapping("/{bookingId}/tickets")
-    public CompletableFuture<ResponseEntity<Void>> addTicketToBooking(
-            @PathVariable String bookingId,
-            @RequestParam Long ticketId,
-            @RequestParam Long seatId,
-            @RequestParam Double price,
-            @RequestParam(defaultValue = "VND") String currency) {
-        return bookingService.addTicketToBooking(bookingId, ticketId, seatId, price, currency)
-                .thenApply(result -> ResponseEntity.ok().build());
+    @GetMapping("/flights/{flightId}/tickets")
+    public CompletableFuture<ResponseEntity<List<TicketSearchDTO>>> searchTickets(
+            @PathVariable Long flightId,
+            @RequestParam(required = false) Long seatClassId) {
+        return bookingService.searchTicketsBySeatClass(flightId, seatClassId)
+                .thenApply(ResponseEntity::ok)
+                .exceptionally(ex -> ResponseEntity.badRequest().build());
     }
 
-    @DeleteMapping("/{bookingId}/tickets/{ticketId}")
-    public CompletableFuture<ResponseEntity<Void>> removeTicketFromBooking(
-            @PathVariable String bookingId,
-            @PathVariable Long ticketId) {
-        return bookingService.removeTicketFromBooking(bookingId, ticketId)
-                .thenApply(result -> ResponseEntity.ok().build());
+    @PostMapping("/with-tickets")
+    public CompletableFuture<ResponseEntity<String>> createBookingWithTickets(@RequestBody CreateBookingCommand command) {
+        return bookingService.createBookingWithTickets(command)
+                .thenApply(bookingId -> new ResponseEntity<>(bookingId, HttpStatus.CREATED))
+                .exceptionally(ex -> {
+                    return new ResponseEntity<>("Failed to create booking: " + ex.getMessage(),
+                            HttpStatus.BAD_REQUEST);
+                });
     }
 
-    @PostMapping("/{bookingId}/expire")
-    public CompletableFuture<ResponseEntity<Void>> expireBooking(@PathVariable String bookingId) {
-        return bookingService.expireBooking(bookingId)
-                .thenApply(result -> ResponseEntity.ok().build());
+    @PostMapping("/{bookingId}/confirm-and-order")
+    public CompletableFuture<ResponseEntity<String>> confirmBookingAndCreateOrder(@PathVariable String bookingId) {
+        return bookingService.confirmBookingAndCreateOrder(bookingId)
+                .thenApply(result -> ResponseEntity.ok("Booking confirmed and order creation triggered"))
+                .exceptionally(ex -> ResponseEntity.badRequest()
+                        .body("Failed to confirm booking: " + ex.getMessage()));
     }
 
     @GetMapping("/{bookingId}")
@@ -56,22 +59,9 @@ public class BookingController {
                 .thenApply(ResponseEntity::ok);
     }
 
-    @PostMapping("/{bookingId}/confirm")
-    public CompletableFuture<ResponseEntity<Void>> confirmBooking(@PathVariable String bookingId) {
-        return bookingService.confirmBooking(bookingId)
-                .thenApply(result -> ResponseEntity.ok().build());
-    }
-
-    @PostMapping("/{bookingId}/cancel")
-    public CompletableFuture<ResponseEntity<Void>> cancelBooking(
-            @PathVariable String bookingId,
-            @RequestParam String reason) {
-        return bookingService.cancelBooking(bookingId, reason).thenApply(result -> ResponseEntity.ok().build());
-    }
-
     @GetMapping("/customer/{customerId}")
     public CompletableFuture<ResponseEntity<List<BookingDTO>>> getBookingsByCustomer(@PathVariable Long customerId) {
         return bookingService.getBookingsByCustomer(customerId)
                 .thenApply(ResponseEntity::ok);
-        }
     }
+}

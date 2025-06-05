@@ -6,6 +6,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import vn.edu.hust.domain.event.*;
+import vn.edu.hust.integration.event.OrderCreationRequestEvent;
 
 @Component
 public class KafkaEventPublisher {
@@ -26,6 +27,11 @@ public class KafkaEventPublisher {
     @EventListener
     public void handleBookingConfirmedEvent(BookingConfirmedEvent event) {
         kafkaTemplate.send("booking-events.confirmed", event);
+        OrderCreationRequestEvent orderEvent = new OrderCreationRequestEvent(
+                event.bookingId(),
+                "ORDER_FROM_BOOKING_" + System.currentTimeMillis()
+        );
+        kafkaTemplate.send("order-creation-requests", orderEvent);
     }
 
     @EventListener
@@ -40,26 +46,44 @@ public class KafkaEventPublisher {
 
     @EventListener
     public void handleSeatHeldEvent(SeatHeldEvent event) {
-        kafkaTemplate.send("seat-events", event);
+        kafkaTemplate.send("seat-events.held", event);
     }
 
     @EventListener
     public void handleSeatReservedEvent(SeatReservedEvent event) {
-        kafkaTemplate.send("seat-events", event);
+        kafkaTemplate.send("seat-events.reserved", event);
     }
 
     @EventListener
     public void handleSeatReleasedEvent(SeatReleasedEvent event) {
-        kafkaTemplate.send("seat-events", event);
+        kafkaTemplate.send("seat-events.released", event);
+
     }
 
     @EventListener
     public void handleSeatAddedToBookingEvent(SeatAddedToBookingEvent event) {
-        kafkaTemplate.send("seat-events", event);
+        kafkaTemplate.send("seat-events.added-to-booking", event);
     }
 
     @EventListener
     public void handleSeatRemovedFromBookingEvent(SeatRemovedFromBookingEvent event) {
-        kafkaTemplate.send("seat-events", event);
+        kafkaTemplate.send("seat-events.removed-from-booking", event);
     }
+
+    @EventListener
+    public void handleSeatHoldExpiredEvent(SeatHoldExpiredEvent event) {
+        kafkaTemplate.send("seat-events.hold-expired", event);
+    }
+
+    @EventListener
+    public void handleTicketReleasedEvent(TicketReleasedEvent event) {
+        kafkaTemplate.send("ticket-events.released", event);
+    }
+
+    @EventListener
+    public void handleTicketHoldExpiredEvent(TicketHoldExpiredEvent event) {
+        kafkaTemplate.send("ticket-events.hold-expired", event);
+    }
+
+
 }
