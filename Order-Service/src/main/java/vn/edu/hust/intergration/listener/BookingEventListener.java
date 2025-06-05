@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import vn.edu.hust.application.service.OrderApplicationService;
-import vn.edu.hust.application.dto.command.CreateOrderCommand;
 import vn.edu.hust.domain.event.BookingCancelledEvent;
 import vn.edu.hust.domain.event.BookingConfirmedEvent;
 
