@@ -1,8 +1,12 @@
 package vn.edu.hust.application.eventhandler;
 
+import jakarta.persistence.LockModeType;
 import org.axonframework.eventhandling.EventHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import vn.edu.hust.domain.event.*;
 import vn.edu.hust.domain.model.enumeration.BookingStatus;
 import vn.edu.hust.domain.model.enumeration.SeatStatus;
@@ -23,6 +27,8 @@ public class BookingEventHandler {
     private SeatJpaRepository seatJpaRepository;
 
     @EventHandler
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Lock(LockModeType.OPTIMISTIC)
     public void on(BookingCreatedEvent event) {
         BookingEntity bookingEntity = new BookingEntity();
         bookingEntity.setBookingId(event.bookingId());
@@ -40,6 +46,8 @@ public class BookingEventHandler {
     }
 
     @EventHandler
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Lock(LockModeType.OPTIMISTIC)
     public void on(TicketAddedToBookingEvent event) {
         BookingEntity entity = bookingJpaRepository.findById(event.bookingId()).orElse(null);
         if (entity != null) {
@@ -53,6 +61,8 @@ public class BookingEventHandler {
     }
 
     @EventHandler
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Lock(LockModeType.OPTIMISTIC)
     public void on(TicketRemovedFromBookingEvent event) {
         BookingEntity entity = bookingJpaRepository.findById(event.bookingId()).orElse(null);
         if (entity != null) {
@@ -62,6 +72,8 @@ public class BookingEventHandler {
     }
 
     @EventHandler
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Lock(LockModeType.OPTIMISTIC)
     public void on(BookingConfirmedEvent event) {
         BookingEntity entity = bookingJpaRepository.findById(event.bookingId()).orElse(null);
         if (entity != null) {
@@ -71,6 +83,8 @@ public class BookingEventHandler {
     }
 
     @EventHandler
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Lock(LockModeType.OPTIMISTIC)
     public void on(BookingCancelledEvent event) {
         BookingEntity entity = bookingJpaRepository.findById(event.bookingId()).orElse(null);
         if (entity != null) {
@@ -80,6 +94,8 @@ public class BookingEventHandler {
     }
 
     @EventHandler
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Lock(LockModeType.OPTIMISTIC)
     public void on(BookingExpiredEvent event) {
         BookingEntity entity = bookingJpaRepository.findById(event.bookingId()).orElse(null);
         if (entity != null) {
@@ -89,6 +105,8 @@ public class BookingEventHandler {
     }
 
     @EventHandler
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Lock(LockModeType.OPTIMISTIC)
     public void on(SeatHeldEvent event) {
         SeatEntity seatEntity = seatJpaRepository.findById(event.seatId()).orElse(null);
         if (seatEntity != null) {
@@ -98,6 +116,8 @@ public class BookingEventHandler {
     }
 
     @EventHandler
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Lock(LockModeType.OPTIMISTIC)
     public void on(SeatReleasedEvent event) {
         SeatEntity seatEntity = seatJpaRepository.findById(event.seatId()).orElse(null);
         if (seatEntity != null) {

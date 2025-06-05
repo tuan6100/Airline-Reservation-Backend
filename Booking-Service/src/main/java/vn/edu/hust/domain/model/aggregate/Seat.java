@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.axonframework.commandhandling.CommandHandler;
+import org.axonframework.deadline.DeadlineManager;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.modelling.command.AggregateLifecycle;
@@ -18,7 +19,10 @@ import vn.edu.hust.domain.event.SeatReleasedEvent;
 import vn.edu.hust.domain.model.enumeration.SeatStatus;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Aggregate
 @NoArgsConstructor
@@ -39,6 +43,11 @@ public class Seat {
     @Value("${domain.seat.hold-util}")
     private CharSequence seatHoldUtils;
 
+    @Autowired
+    private DeadlineManager deadlineManager;
+
+    private HashMap<String, String> deadlineMap;
+
 
     @CommandHandler
     public void handle(HoldSeatCommand command) {
@@ -58,12 +67,23 @@ public class Seat {
                 command.getCustomerId(),
                 holdUntil
         ));
+        String deadlineName = "seat-hold-" + seatId + "-" + System.currentTimeMillis();
+        String scheduledId = deadlineManager.schedule(
+                Instant.from(holdUntil),
+                deadlineName,
+                new SeatHoldExpiredMessage(seatId, command.getCustomerId())
+        );
+        deadlineMap.put(scheduledId, deadlineName);
     }
 
     @CommandHandler
     public void handle(ReleaseSeatCommand command) {
         if (status == SeatStatus.AVAILABLE) {
             return;
+        }
+        if (!deadlineMap.isEmpty()) {
+            Map.Entry<String, String> entry = deadlineMap.entrySet().iterator().next();
+            deadlineManager.cancelSchedule(entry.getValue(), entry.getKey());
         }
         AggregateLifecycle.apply(new SeatReleasedEvent(seatId, null));
     }
@@ -85,4 +105,9 @@ public class Seat {
     private boolean isHoldExpired() {
         return holdUntil != null && LocalDateTime.now().isAfter(holdUntil);
     }
+
+    private record SeatHoldExpiredMessage (
+            Long seatId,
+            Long customerId
+    ) {}
 }
