@@ -1,92 +1,137 @@
-
-CREATE TABLE "Country" (
-                           "country_id" SERIAL PRIMARY KEY,
-                           "country_name" VARCHAR UNIQUE NOT NULL,
-                           "abbreviation" VARCHAR(2) UNIQUE NOT NULL,
-                           "continent" VARCHAR NOT NULL,
-                           "gmt" INTEGER NOT NULL
+create table country
+(
+    country_id   integer default nextval('"Country_country_id_seq"'::regclass) not null
+        constraint "Country_pkey"
+            primary key,
+    country_name varchar                                                       not null
+        constraint "Country_country_name_key"
+            unique,
+    abbreviation varchar(2)                                                    not null
+        constraint "Country_abbreviation_key"
+            unique,
+    continent    varchar                                                       not null,
+    gmt          integer                                                       not null
 );
 
-CREATE TABLE "City" (
-                        "city_id" SERIAL PRIMARY KEY,
-                        "city_name" VARCHAR UNIQUE NOT NULL,
-                        "country_id" INTEGER NOT NULL REFERENCES "Country" ("country_id")
+create table city
+(
+    city_id    integer default nextval('"City_city_id_seq"'::regclass) not null
+        constraint "City_pkey"
+            primary key,
+    city_name  varchar                                                 not null
+        constraint "City_city_name_key"
+            unique,
+    country_id integer                                                 not null
+        constraint "City_country_id_fkey"
+            references country
 );
 
-CREATE TABLE "Airline" (
-                           "airline_id" SERIAL PRIMARY KEY,
-                           "airline_name" VARCHAR UNIQUE NOT NULL,
-                           "city_id" INTEGER NOT NULL REFERENCES "City" ("city_id"),
-                           "address" VARCHAR NOT NULL,
-                           "website" VARCHAR NOT NULL,
-                           "max_tickets_per_order" INTEGER
+create table airline
+(
+    airline_id            integer default nextval('"Airline_airline_id_seq"'::regclass) not null
+        constraint "Airline_pkey"
+            primary key,
+    airline_name          varchar                                                       not null
+        constraint "Airline_airline_name_key"
+            unique,
+    city_id               integer                                                       not null
+        constraint "Airline_city_id_fkey"
+            references city,
+    address               varchar                                                       not null,
+    website               varchar                                                       not null,
+    max_tickets_per_order integer
 );
 
-CREATE TABLE "Airport" (
-                           "airport_id" SERIAL PRIMARY KEY,
-                           "airport_name" VARCHAR UNIQUE NOT NULL,
-                           "city_id" INTEGER NOT NULL REFERENCES "City" ("city_id"),
-                           "address" VARCHAR NOT NULL
+create table airport
+(
+    airport_id   integer default nextval('"Airport_airport_id_seq"'::regclass) not null
+        constraint "Airport_pkey"
+            primary key,
+    airport_name varchar                                                       not null
+        constraint "Airport_airport_name_key"
+            unique,
+    city_id      integer                                                       not null
+        constraint "Airport_city_id_fkey"
+            references city,
+    address      varchar                                                       not null
 );
 
-CREATE TABLE "Aircraft" (
-                            "aircraft_id" SERIAL PRIMARY KEY,
-                            "aircraft_name" VARCHAR UNIQUE NOT NULL,
-                            "airline_id" INTEGER NOT NULL REFERENCES "Airline" ("airline_id"),
-                            "seat_count" INTEGER NOT NULL
+create table aircraft
+(
+    aircraft_id   integer default nextval('"Aircraft_aircraft_id_seq"'::regclass) not null
+        constraint "Aircraft_pkey"
+            primary key,
+    aircraft_name varchar                                                         not null
+        constraint "Aircraft_aircraft_name_key"
+            unique,
+    airline_id    integer                                                         not null
+        constraint "Aircraft_airline_id_fkey"
+            references airline,
+    seat_count    integer                                                         not null
 );
 
-CREATE TABLE "SeatClass" (
-                             "seat_class_id" SERIAL PRIMARY KEY,
-                             "seat_class_name" VARCHAR NOT NULL,
-                             "airline_id" INTEGER NOT NULL REFERENCES "Airline" ("airline_id"),
-                             "price" INTEGER NOT NULL CHECK ("price" >= 0)
+create table voucher
+(
+    voucher_id       integer default nextval('"Voucher_voucher_id_seq"'::regclass) not null
+        constraint "Voucher_pkey"
+            primary key,
+    voucher_name     varchar                                                       not null
+        constraint "Voucher_voucher_name_key"
+            unique,
+    discount_percent integer default 0                                             not null
+        constraint "Voucher_discount_percent_check"
+            check ((discount_percent >= 0) AND (discount_percent <= 100)),
+    amount           integer                                                       not null
+        constraint "Voucher_amount_check"
+            check (amount >= 0),
+    start_time       timestamp                                                     not null,
+    end_time         timestamp                                                     not null,
+    constraint "Voucher_check"
+        check (end_time > start_time)
 );
 
-CREATE TABLE "Voucher" (
-                           "voucher_id" SERIAL PRIMARY KEY,
-                           "voucher_name" VARCHAR UNIQUE NOT NULL,
-                           "discount_percent" INTEGER NOT NULL DEFAULT 0 CHECK ("discount_percent" BETWEEN 0 AND 100),
-                           "amount" INTEGER NOT NULL CHECK ("amount" >= 0),
-                           "start_time" TIMESTAMP NOT NULL,
-                           "end_time" TIMESTAMP NOT NULL CHECK ("end_time" > "start_time")
+create table customer_auth
+(
+    customer_id  integer     not null
+        constraint "Customer_Auth_pkey"
+            primary key,
+    phone_number varchar(10) not null,
+    password     varchar     not null
+        constraint "Customer_Auth_password_key"
+            unique
 );
 
-CREATE TABLE "TicketOrder" (
-                               "order_id" SERIAL PRIMARY KEY,
-                               "customer_id" INTEGER REFERENCES "Customer" ("customer_id"),
-                               "promotion_id" INTEGER REFERENCES "Voucher" ("voucher_id")
+create table flight_route
+(
+    route_id          integer default nextval('"FlightRoute_route_id_seq"'::regclass) not null
+        constraint "FlightRoute_pkey"
+            primary key,
+    departure_airport integer                                                         not null
+        constraint "FlightRoute_departure_airport_fkey"
+            references airport,
+    arrival_airport   integer                                                         not null
+        constraint "FlightRoute_arrival_airport_fkey"
+            references airport
 );
 
-CREATE TABLE "Seat" (
-                        "seat_id" SERIAL PRIMARY KEY,
-                        "seat_class_id" INTEGER NOT NULL REFERENCES "SeatClass" ("seat_class_id"),
-                        "aircraft_id" INTEGER NOT NULL REFERENCES "Aircraft" (aircraft_id),
-                        "seat_code" VARCHAR NOT NULL,
-                        "is_available" BOOLEAN DEFAULT TRUE,
-                        "hold_until" TIMESTAMP,
-                        "version" INTEGER NOT NULL DEFAULT 0
-);
+create index idx_flight_route_airports
+    on flight_route (departure_airport, arrival_airport);
 
-CREATE INDEX idx_seat_availability ON "Seat" ("is_available");
-CREATE INDEX idx_hold_util ON "Seat" ("hold_until");
-
-CREATE TABLE "FlightRoute" (
-                               "route_id" SERIAL PRIMARY KEY,
-                               "departure_airport" INTEGER NOT NULL REFERENCES "Airport" ("airport_id"),
-                               "arrival_airport" INTEGER NOT NULL REFERENCES "Airport" ("airport_id")
-);
-CREATE INDEX idx_flight_route_airports ON "FlightRoute" ("departure_airport", "arrival_airport");
-
-CREATE TABLE "Flight" (
-                          "flight_id" SERIAL,
-                          "route_id" INTEGER NOT NULL REFERENCES "FlightRoute" ("route_id"),
-                          "aircraft_id" INTEGER NOT NULL REFERENCES "Aircraft" ("aircraft_id"),
-                          "departure_time" TIMESTAMP NOT NULL,
-                          "estimated_flight_duration" TIME,
-                          PRIMARY KEY ("flight_id", "departure_time")
-) PARTITION BY RANGE ("departure_time");
-
+create table flight
+(
+    flight_id                 integer default nextval('"Flight_flight_id_seq"'::regclass) not null,
+    route_id                  integer                                                     not null
+        constraint "Flight_route_id_fkey"
+            references flight_route,
+    aircraft_id               integer                                                     not null
+        constraint "Flight_aircraft_id_fkey"
+            references aircraft,
+    departure_time            timestamp                                                   not null,
+    estimated_flight_duration time,
+    constraint "Flight_pkey"
+        primary key (flight_id, departure_time)
+)
+    partition by RANGE (departure_time);
 
 CREATE OR REPLACE PROCEDURE create_monthly_flight_partitions(
     start_date DATE,
@@ -100,8 +145,8 @@ DECLARE
 BEGIN
     WHILE current_date_var <= end_date LOOP
             next_date := current_date_var + INTERVAL '1 month';
-            partition_name := 'Flight_' || TO_CHAR(current_date_var, 'YYYYMM');
-            sql_command := 'CREATE TABLE IF NOT EXISTS "' || partition_name || '" PARTITION OF "Flight" ' ||
+            partition_name := 'flight_' || TO_CHAR(current_date_var, 'YYYYMM');
+            sql_command := 'CREATE TABLE IF NOT EXISTS "' || partition_name || '" PARTITION OF "flight" ' ||
                            'FOR VALUES FROM (''' || current_date_var || ' 00:00:00'') TO (''' || next_date || ' 00:00:00'');';
             EXECUTE sql_command;
             current_date_var := next_date;
@@ -112,56 +157,141 @@ $$;
 CALL create_monthly_flight_partitions(
                 CURRENT_DATE,
                 (CURRENT_DATE + INTERVAL '12 months')::DATE
-     );
-
-CREATE INDEX idx_flight_route_id ON "Flight" ("route_id");
-CREATE INDEX idx_flight_departure_time ON "Flight" ("departure_time", "estimated_flight_duration");
-
-CREATE TABLE "Customer" (
-                            "customer_id" SERIAL PRIMARY KEY,
-                            "country_id" INTEGER REFERENCES "Country" ("country_id"),
-                            "full_name" VARCHAR NOT NULL,
-                            "gender" VARCHAR(1) NOT NULL CHECK ("gender" IN ('M', 'F')),
-                            "email" VARCHAR
 );
 
-CREATE INDEX idx_customer_info ON "Customer" ("full_name");
+create index idx_flight_route_id
+    on flight (route_id);
 
-CREATE TABLE "Customer_Auth" (
-                                 "customer_id" INTEGER REFERENCES "Customer" ("customer_id"),
-                                 "phone_number" VARCHAR(10) NOT NULL,
-                                 "password" VARCHAR UNIQUE NOT NULL,
-                                 PRIMARY KEY ("customer_id")
+create index idx_flight_departure_time
+    on flight (departure_time, estimated_flight_duration);
+
+create table seat_class
+(
+    seat_class_id   integer default nextval('"SeatClass_seat_class_id_seq"'::regclass) not null
+        constraint "SeatClass_pkey"
+            primary key,
+    seat_class_name varchar                                                            not null,
+    airline_id      integer                                                            not null
+        constraint "SeatClass_airline_id_fkey"
+            references airline,
+    price           integer                                                            not null
+        constraint "SeatClass_price_check"
+            check (price >= 0),
+    constraint seatclass_seat_class_name_airline_unique
+        unique (seat_class_name, airline_id)
 );
 
-CREATE TABLE "Ticket" (
-                          "ticket_id" SERIAL PRIMARY KEY,
-                          "ticket_code" UUID UNIQUE,
-                          "flight_id" INTEGER NOT NULL,
-                          "flight_departure_time" TIMESTAMP ,
-                          "seat_id" INTEGER NOT NULL REFERENCES "Seat" ("seat_id"),
-                          "created_at" TIMESTAMP NOT NULL,
-                          "status" INTEGER DEFAULT 0,
-                          FOREIGN KEY ("flight_id", "flight_departure_time") REFERENCES "Flight" ("flight_id", "departure_time")
+
+create table customer
+(
+    customer_id bigint generated by default as identity
+        primary key,
+    country_id  bigint,
+    email       varchar(255),
+    full_name   varchar(255) not null,
+    gender      varchar(255) not null
 );
 
-CREATE TABLE "BookedTicket" (
-                                "ticket_id" INTEGER REFERENCES "Ticket" ("ticket_id"),
-                                "order_id" INTEGER NOT NULL REFERENCES "TicketOrder" ("order_id"),
-                                PRIMARY KEY ("ticket_id")
+create table booking
+(
+    booking_id            varchar(255) not null
+        constraint booking_pkey1
+            primary key,
+    created_at            timestamp(6),
+    currency              varchar(255),
+    customer_id           bigint,
+    expires_at            timestamp(6),
+    flight_departure_time timestamp(6),
+    flight_id             bigint,
+    seat_count            integer,
+    status                varchar(255)
+        constraint booking_status_check
+            check ((status)::text = ANY
+                   ((ARRAY ['PENDING'::character varying, 'CONFIRMED'::character varying, 'CANCELLED'::character varying, 'EXPIRED'::character varying])::text[])),
+    ticket_count          integer,
+    total_amount          double precision,
+    updated_at            timestamp(6),
+    version               integer
 );
 
-CREATE TABLE "Invoice" (
-                           "invoice_id" SERIAL PRIMARY KEY,
-                           "order_id" INTEGER NOT NULL REFERENCES "TicketOrder" ("order_id"),
-                           "total_amount" BIGINT NOT NULL DEFAULT 0,
-                           "issue_date" TIMESTAMP NOT NULL
+create table seat
+(
+    seat_id       bigint generated by default as identity
+        primary key,
+    aircraft_id   bigint       not null,
+    seat_code     varchar(255) not null,
+    status        varchar(255)
+        constraint seat_status_check
+            check ((status)::text = ANY
+                   ((ARRAY ['AVAILABLE'::character varying, 'ON_HOLD'::character varying, 'RESERVED'::character varying])::text[])),
+    version       integer,
+    seat_class_id bigint
+        constraint fku0t0tn8wto9nuyqm39qwbeer
+            references seat_class (seat_class_id) ,
+    updated_at    timestamp(6)
 );
 
-CREATE TABLE "Payment" (
-                           "payment_id" SERIAL PRIMARY KEY,
-                           "invoice_id" INTEGER NOT NULL REFERENCES "Invoice" ("invoice_id"),
-                           "amount" BIGINT NOT NULL,
-                           "payment_date" TIMESTAMP NOT NULL,
-                           "payment_method" VARCHAR NOT NULL
+
+create table order_item
+(
+    id          bigint generated by default as identity
+        constraint order_item_pkey1
+            primary key,
+    currency    varchar(255),
+    description varchar(255),
+    flight_id   bigint,
+    order_id    bigint,
+    price       numeric(38, 2),
+    seat_id     bigint,
+    ticket_id   bigint
 );
+
+create table ticket_order
+(
+    order_id       bigint generated by default as identity
+        primary key,
+    booking_id     varchar(255),
+    created_at     timestamp(6),
+    currency       varchar(255),
+    customer_id    bigint,
+    payment_status varchar(255),
+    promotion_id   bigint,
+    status         varchar(255),
+    total_amount   numeric(38, 2),
+    updated_at     timestamp(6),
+    version        integer
+);
+
+create table booked_ticket
+(
+    ticket_id bigint not null
+        primary key,
+    order_id  bigint not null
+        constraint fk52x4fmhanhf1gl1lg223nts8w
+            references ticket_order
+);
+
+create table invoice
+(
+    invoice_id   bigint generated by default as identity
+        primary key,
+    issue_date   timestamp(6) not null,
+    order_id     bigint       not null
+        constraint fkh2ruo9508vybbtrloqal9nu9f
+            references ticket_order,
+    total_amount bigint       not null
+);
+
+create table payment
+(
+    payment_id     bigint generated by default as identity
+        primary key,
+    amount         bigint       not null,
+    invoice_id     bigint       not null
+        constraint fkdpyta813lofdsu8dlhsybxtdc
+            references invoice,
+    payment_date   timestamp(6) not null,
+    payment_method varchar(255) not null
+);
+
+
