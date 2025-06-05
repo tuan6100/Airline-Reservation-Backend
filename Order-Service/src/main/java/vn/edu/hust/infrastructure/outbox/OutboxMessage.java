@@ -7,7 +7,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(schema = "private", name = "OutboxMessage")
+@Table(schema = "private", name = "outbox_message")
 @Getter
 @Setter
 public class OutboxMessage {

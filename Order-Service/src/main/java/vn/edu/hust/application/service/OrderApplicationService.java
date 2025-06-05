@@ -38,11 +38,11 @@ public class OrderApplicationService {
         return commandGateway.send(command);
     }
 
-    public CompletableFuture<Void> cancelOrder(Long orderId, String reason) {
+    public void cancelOrder(Long orderId, String reason) {
         CancelOrderCommand command = new CancelOrderCommand();
         command.setOrderId(orderId);
         command.setReason(reason);
-        return commandGateway.send(command);
+        commandGateway.send(command);
     }
 
     public CompletableFuture<Void> markOrderPaid(Long orderId, Long paymentId) {
