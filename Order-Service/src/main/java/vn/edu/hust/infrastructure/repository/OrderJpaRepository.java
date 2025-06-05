@@ -14,10 +14,19 @@ import java.util.Optional;
 @Repository
 public interface OrderJpaRepository extends JpaRepository<OrderEntity, Long> {
 
+
+
     List<OrderEntity> findByCustomerId(Long customerId);
 
-    Optional<OrderEntity> findByBookingId(Long bookingId);
+    Optional<OrderEntity> findByBookingId(String bookingId); // String for booking ID
 
     @Query("SELECT o FROM OrderEntity o WHERE o.status = :status")
-    List<OrderEntity> findByStatus(@Param("status") OrderStatus status);
+    List<OrderEntity> findByStatus(@Param("status") String status); // String for status
+
+    @Query("SELECT o FROM OrderEntity o WHERE o.paymentStatus = :paymentStatus")
+    List<OrderEntity> findByPaymentStatus(@Param("paymentStatus") String paymentStatus);
+
+    @Query("SELECT o FROM OrderEntity o WHERE o.createdAt >= :startDate AND o.createdAt <= :endDate")
+    List<OrderEntity> findByCreatedAtBetween(@Param("startDate") java.time.LocalDateTime startDate,
+                                             @Param("endDate") java.time.LocalDateTime endDate);
 }

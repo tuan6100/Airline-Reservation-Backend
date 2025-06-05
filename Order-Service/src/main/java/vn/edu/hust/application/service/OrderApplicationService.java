@@ -1,4 +1,4 @@
-package vn.edu.hust.application;
+package vn.edu.hust.application.service;
 
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.queryhandling.QueryGateway;

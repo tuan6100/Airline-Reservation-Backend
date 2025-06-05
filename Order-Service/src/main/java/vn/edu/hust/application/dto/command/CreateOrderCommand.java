@@ -1,25 +1,26 @@
 package vn.edu.hust.application.dto.command;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.axonframework.modelling.command.TargetAggregateIdentifier;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Command for creating a new order
- */
-@Data
-public class CreateOrderCommand {
-    private Long bookingId;
-    private Long customerId;
-    private Long promotionId;
-    private List<OrderItemCommand> items = new ArrayList<>();
 
-    /**
-     * Command for creating order items
-     */
+@Data
+@NoArgsConstructor
+public class CreateOrderCommand {
+    @TargetAggregateIdentifier
+    private Long orderId;
+    private Long customerId;
+    private Long bookingId;
+    private Long promotionId;
+    private List<OrderItemRequest> items;
+
     @Data
-    public static class OrderItemCommand {
+    @NoArgsConstructor
+    public static class OrderItemRequest {
         private Long ticketId;
         private Long flightId;
         private Long seatId;

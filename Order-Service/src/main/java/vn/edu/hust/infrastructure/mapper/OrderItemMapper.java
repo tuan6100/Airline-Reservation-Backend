@@ -1,7 +1,6 @@
 package vn.edu.hust.infrastructure.mapper;
 
 import org.springframework.stereotype.Component;
-import vn.edu.hust.domain.model.entity.OrderItem;
 import vn.edu.hust.domain.model.valueobj.*;
 import vn.edu.hust.infrastructure.entity.OrderItemEntity;
 

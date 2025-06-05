@@ -7,15 +7,17 @@ import vn.edu.hust.domain.model.valueobj.Money;
 import vn.edu.hust.domain.model.valueobj.OrderId;
 import vn.edu.hust.domain.model.valueobj.PromotionId;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record OrderCreatedEvent(
-        OrderId orderId,
-        CustomerId customerId,
-        BookingId bookingId,
-        PromotionId promotionId,
+        Long orderId,
+        Long customerId,
+        String bookingId,
+        Long promotionId,
         OrderStatus status,
-        Money totalAmount,
+        BigDecimal totalAmount,
+        String currency,
         LocalDateTime createdAt
 ) {}
 

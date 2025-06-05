@@ -12,31 +12,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "TicketOrder")
+@Table(name = "\"TicketOrder\"")
 @Getter
 @Setter
 public class OrderEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_id")
-    private Long id;
+    private Long orderId;
 
     @Column(name = "customer_id")
     private Long customerId;
 
-    @Column(name = "booking_id")
-    private Long bookingId;
-
     @Column(name = "promotion_id")
     private Long promotionId;
 
+    @Column(name = "booking_id")
+    private String bookingId;
+
     @Column(name = "status")
-    @Enumerated(EnumType.STRING)
-    private OrderStatus status;
+    private String status;
 
     @Column(name = "payment_status")
-    @Enumerated(EnumType.STRING)
-    private PaymentStatus paymentStatus;
+    private String paymentStatus;
 
     @Column(name = "total_amount")
     private BigDecimal totalAmount;
@@ -52,9 +50,10 @@ public class OrderEntity {
 
     @Version
     @Column(name = "version")
-    private int version;
+    private Integer version = 0;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
-    private List<OrderItemEntity> items = new ArrayList<>();
+    private List<BookedTicketEntity> bookedTickets = new ArrayList<>();
 }

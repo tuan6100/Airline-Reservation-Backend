@@ -1,4 +1,8 @@
 package vn.edu.hust.domain.event;
 
-public class OrderPaymentPendingEvent {
-}
+import java.time.LocalDateTime;
+
+public record OrderPaymentPendingEvent(
+        Long orderId,
+        LocalDateTime pendingAt
+) {}
