@@ -1,4 +1,4 @@
-package vn.edu.hust.intergration.eventhandler.event;
+package vn.edu.hust.intergration.event;
 
 import org.springframework.stereotype.Component;
 

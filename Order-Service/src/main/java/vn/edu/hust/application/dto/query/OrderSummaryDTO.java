@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 public class OrderSummaryDTO {
     private Long orderId;
     private Long customerId;
-    private Long bookingId;
+    private String bookingId;
     private String status;
     private String paymentStatus;
     private BigDecimal totalAmount;

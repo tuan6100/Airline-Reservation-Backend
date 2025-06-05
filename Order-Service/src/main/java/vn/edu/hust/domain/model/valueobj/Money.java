@@ -1,23 +1,24 @@
 package vn.edu.hust.domain.model.valueobj;
 
-import lombok.Data;
+import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Currency;
 import java.util.Objects;
 
-/**
- * Money Value Object
- */
-@Data
+
+@Getter
 public class Money {
+    // Getter methods
     private final BigDecimal amount;
     private final Currency currency;
 
     public static final Money ZERO = new Money(BigDecimal.ZERO, Currency.getInstance("VND"));
 
     public Money(BigDecimal amount, Currency currency) {
+        Objects.requireNonNull(amount, "Amount cannot be null");
+        Objects.requireNonNull(currency, "Currency cannot be null");
         this.amount = amount.setScale(2, RoundingMode.HALF_UP);
         this.currency = currency;
     }

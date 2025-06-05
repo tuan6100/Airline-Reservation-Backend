@@ -4,9 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.axonframework.modelling.command.TargetAggregateIdentifier;
 
-import java.util.ArrayList;
 import java.util.List;
-
 
 @Data
 @NoArgsConstructor
@@ -14,7 +12,7 @@ public class CreateOrderCommand {
     @TargetAggregateIdentifier
     private Long orderId;
     private Long customerId;
-    private Long bookingId;
+    private String bookingId;
     private Long promotionId;
     private List<OrderItemRequest> items;
 

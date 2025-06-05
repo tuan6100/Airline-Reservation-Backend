@@ -1,4 +1,4 @@
-package vn.edu.hust.intergration.eventhandler;
+package vn.edu.hust.intergration;
 
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.springframework.beans.factory.annotation.Autowired;

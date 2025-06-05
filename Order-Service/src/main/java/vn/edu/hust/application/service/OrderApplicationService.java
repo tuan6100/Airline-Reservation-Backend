@@ -1,6 +1,7 @@
 package vn.edu.hust.application.service;
 
 import org.axonframework.commandhandling.gateway.CommandGateway;
+import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,7 +45,7 @@ public class OrderApplicationService {
         return commandGateway.send(command);
     }
 
-    public CompletableFuture<Void> markOrderPaid(Long orderId, String paymentId) {
+    public CompletableFuture<Void> markOrderPaid(Long orderId, Long paymentId) {
         MarkOrderPaidCommand command = new MarkOrderPaidCommand();
         command.setOrderId(orderId);
         command.setPaymentId(paymentId);
@@ -60,7 +61,7 @@ public class OrderApplicationService {
     public CompletableFuture<List<OrderSummaryDTO>> getOrdersByCustomer(Long customerId) {
         GetOrdersByCustomerQuery query = new GetOrdersByCustomerQuery();
         query.setCustomerId(customerId);
-        return queryGateway.query(query, List.class);
+        return queryGateway.query(query, ResponseTypes.multipleInstancesOf(OrderSummaryDTO.class));
     }
 
     public CompletableFuture<OrderDTO> getOrderByBooking(String bookingId) {

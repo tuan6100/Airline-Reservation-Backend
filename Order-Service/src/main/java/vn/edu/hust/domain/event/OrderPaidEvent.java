@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 public record OrderPaidEvent(
         Long orderId,
-        String paymentId,
+        Long paymentId,
         BigDecimal amount,
         String currency,
         LocalDateTime paidAt

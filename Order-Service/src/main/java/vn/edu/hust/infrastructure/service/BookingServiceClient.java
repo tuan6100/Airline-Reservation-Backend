@@ -6,9 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import vn.edu.hust.domain.model.valueobj.BookingId;
 import vn.edu.hust.infrastructure.dto.BookingDTO;
-
 
 @Service
 public class BookingServiceClient {
@@ -24,8 +22,8 @@ public class BookingServiceClient {
         this.bookingServiceUrl = bookingServiceUrl;
     }
 
-    public BookingDTO getBookingDetails(BookingId bookingId) {
-        String url = bookingServiceUrl + "/api/bookings/" + bookingId.value();
+    public BookingDTO getBookingDetails(String bookingId) {  // Changed parameter type
+        String url = bookingServiceUrl + "/api/bookings/" + bookingId;
         ResponseEntity<BookingDTO> response = restTemplate.getForEntity(url, BookingDTO.class);
 
         if (response.getStatusCode() == HttpStatus.OK) {
@@ -35,8 +33,8 @@ public class BookingServiceClient {
         }
     }
 
-    public void confirmBooking(BookingId bookingId) {
-        String url = bookingServiceUrl + "/api/bookings/" + bookingId.value() + "/confirm";
+    public void confirmBooking(String bookingId) {  // Changed parameter type
+        String url = bookingServiceUrl + "/api/bookings/" + bookingId + "/confirm";
         ResponseEntity<Void> response = restTemplate.postForEntity(url, null, Void.class);
 
         if (response.getStatusCode() != HttpStatus.OK) {
@@ -44,8 +42,8 @@ public class BookingServiceClient {
         }
     }
 
-    public void cancelBooking(BookingId bookingId, String reason) {
-        String url = bookingServiceUrl + "/api/bookings/" + bookingId.value() + "/cancel?reason=" + reason;
+    public void cancelBooking(String bookingId, String reason) {  // Changed parameter type
+        String url = bookingServiceUrl + "/api/bookings/" + bookingId + "/cancel?reason=" + reason;
         ResponseEntity<Void> response = restTemplate.postForEntity(url, null, Void.class);
 
         if (response.getStatusCode() != HttpStatus.OK) {

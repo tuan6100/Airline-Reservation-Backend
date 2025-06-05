@@ -40,7 +40,7 @@ public class OrderController {
     @PostMapping("/{orderId}/mark-paid")
     public CompletableFuture<ResponseEntity<Void>> markOrderAsPaid(
             @PathVariable Long orderId,
-            @RequestParam String paymentId) {
+            @RequestParam Long paymentId) {
         return orderApplicationService.markOrderPaid(orderId, paymentId)
                 .thenApply(_ -> ResponseEntity.ok().build());
     }

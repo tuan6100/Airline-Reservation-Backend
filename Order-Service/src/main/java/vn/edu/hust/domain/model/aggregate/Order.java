@@ -42,7 +42,7 @@ public class Order {
         AggregateLifecycle.apply(new OrderCreatedEvent(
                 command.getOrderId(),
                 command.getCustomerId(),
-                command.getBookingId().toString(),
+                command.getBookingId(),
                 command.getPromotionId(),
                 OrderStatus.PENDING,
                 BigDecimal.ZERO,

@@ -2,12 +2,11 @@ package vn.edu.hust.infrastructure.repository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
-import vn.edu.hust.domain.model.aggregate.Order;
-import vn.edu.hust.domain.model.enumeration.OrderStatus;
-import vn.edu.hust.domain.model.valueobj.BookingId;
-import vn.edu.hust.domain.model.valueobj.CustomerId;
-import vn.edu.hust.domain.model.valueobj.OrderId;
-import vn.edu.hust.infrastructure.mapper.OrderMapper;
+import vn.edu.hust.application.dto.query.OrderDTO;
+import vn.edu.hust.application.dto.query.OrderSummaryDTO;
+import vn.edu.hust.application.dto.query.OrderItemDTO;
+import vn.edu.hust.infrastructure.entity.OrderEntity;
+import vn.edu.hust.infrastructure.entity.OrderItemEntity;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,42 +20,76 @@ public class OrderQueryRepository {
     @Autowired
     private OrderItemJpaRepository orderItemJpaRepository;
 
-    @Autowired
-    private BookedTicketJpaRepository bookedTicketJpaRepository;
+    public OrderDTO findById(Long orderId) {
+        OrderEntity orderEntity = orderJpaRepository.findById(orderId).orElse(null);
+        if (orderEntity == null) {
+            return null;
+        }
 
-    @Autowired
-    private OrderMapper orderMapper;
+        OrderDTO dto = new OrderDTO();
+        dto.setOrderId(orderEntity.getOrderId());
+        dto.setCustomerId(orderEntity.getCustomerId());
+        dto.setBookingId((orderEntity.getBookingId()));
+        dto.setPromotionId(orderEntity.getPromotionId());
+        dto.setStatus(orderEntity.getStatus());
+        dto.setPaymentStatus(orderEntity.getPaymentStatus());
+        dto.setTotalAmount(orderEntity.getTotalAmount());
+        dto.setCurrency(orderEntity.getCurrency());
+        dto.setCreatedAt(orderEntity.getCreatedAt());
+        dto.setUpdatedAt(orderEntity.getUpdatedAt());
 
-    public Order findById(OrderId orderId) {
-        return orderJpaRepository.findById(orderId.value())
-                .map(orderMapper::toDomain)
-                .orElse(null);
+        // Load order items
+        List<OrderItemEntity> itemEntities = orderItemJpaRepository.findByOrderId(orderId);
+        List<OrderItemDTO> itemDTOs = itemEntities.stream()
+                .map(this::convertToOrderItemDTO)
+                .collect(Collectors.toList());
+        dto.setItems(itemDTOs);
+
+        return dto;
     }
 
-    public List<Order> findByCustomerId(CustomerId customerId) {
-        return orderJpaRepository.findByCustomerId(customerId.value())
+    public List<OrderSummaryDTO> findByCustomerId(Long customerId) {
+        return orderJpaRepository.findByCustomerId(customerId)
                 .stream()
-                .map(orderMapper::toDomain)
+                .map(this::convertToOrderSummaryDTO)
                 .collect(Collectors.toList());
     }
 
-    public Order findByBookingId(BookingId bookingId) {
-        return orderJpaRepository.findByBookingId(bookingId.value())
-                .map(orderMapper::toDomain)
-                .orElse(null);
+    public OrderDTO findByBookingId(String bookingId) {
+        OrderEntity orderEntity = orderJpaRepository.findByBookingId(bookingId).orElse(null);
+        if (orderEntity == null) {
+            return null;
+        }
+        return findById(orderEntity.getOrderId());
     }
 
-    public List<Order> findAll() {
-        return orderJpaRepository.findAll()
-                .stream()
-                .map(orderMapper::toDomain)
-                .collect(Collectors.toList());
+    private OrderItemDTO convertToOrderItemDTO(OrderItemEntity entity) {
+        OrderItemDTO dto = new OrderItemDTO();
+        dto.setId(entity.getId());
+        dto.setTicketId(entity.getTicketId());
+        dto.setFlightId(entity.getFlightId());
+        dto.setSeatId(entity.getSeatId());
+        dto.setPrice(entity.getPrice());
+        dto.setCurrency(entity.getCurrency());
+        dto.setDescription(entity.getDescription());
+        return dto;
     }
 
-    public List<Order> findByStatus(String status) {
-        return orderJpaRepository.findByStatus(status)
-                .stream()
-                .map(orderMapper::toDomain)
-                .collect(Collectors.toList());
+    private OrderSummaryDTO convertToOrderSummaryDTO(OrderEntity entity) {
+        OrderSummaryDTO dto = new OrderSummaryDTO();
+        dto.setOrderId(entity.getOrderId());
+        dto.setCustomerId(entity.getCustomerId());
+        dto.setBookingId(entity.getBookingId());
+        dto.setStatus(entity.getStatus());
+        dto.setPaymentStatus(entity.getPaymentStatus());
+        dto.setTotalAmount(entity.getTotalAmount());
+        dto.setCurrency(entity.getCurrency());
+        dto.setCreatedAt(entity.getCreatedAt());
+
+        // Count items
+        List<OrderItemEntity> items = orderItemJpaRepository.findByOrderId(entity.getOrderId());
+        dto.setItemCount(items.size());
+
+        return dto;
     }
 }

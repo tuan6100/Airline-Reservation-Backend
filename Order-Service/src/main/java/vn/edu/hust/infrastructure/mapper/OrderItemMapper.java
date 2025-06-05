@@ -4,9 +4,6 @@ import org.springframework.stereotype.Component;
 import vn.edu.hust.domain.model.valueobj.*;
 import vn.edu.hust.infrastructure.entity.OrderItemEntity;
 
-import java.util.Currency;
-
-
 @Component
 public class OrderItemMapper {
 
@@ -15,39 +12,33 @@ public class OrderItemMapper {
             return null;
         }
 
-        OrderItem item = OrderItem.create(
-                new TicketId(entity.getTicketId()),
-                new FlightId(entity.getFlightId()),
-                new SeatId(entity.getSeatId()),
-                new Money(entity.getPrice(), Currency.getInstance(entity.getCurrency())),
+        return OrderItem.withId(
+                entity.getId(),
+                entity.getTicketId(),
+                entity.getFlightId(),
+                entity.getSeatId(),
+                entity.getPrice(),
+                entity.getCurrency(),
                 entity.getDescription()
         );
-        if (entity.getId() != null) {
-            try {
-                java.lang.reflect.Field idField = OrderItem.class.getDeclaredField("id");
-                idField.setAccessible(true);
-                idField.set(item, entity.getId());
-            } catch (Exception e) {
-                System.err.println("Error setting ID field: " + e.getMessage());
-            }
-        }
-        return item;
     }
 
     public OrderItemEntity toEntity(OrderItem domain) {
         if (domain == null) {
             return null;
         }
+
         OrderItemEntity entity = new OrderItemEntity();
-        if (domain.getId() != null) {
-            entity.setId(domain.getId());
+        if (domain.id() != null) {
+            entity.setId(domain.id());
         }
-        entity.setTicketId(domain.getTicketId().value());
-        entity.setFlightId(domain.getFlightId().value());
-        entity.setSeatId(domain.getSeatId().value());
-        entity.setPrice(domain.getPrice().getAmount());
-        entity.setCurrency(domain.getPrice().getCurrency().getCurrencyCode());
-        entity.setDescription(domain.getDescription());
+        entity.setTicketId(domain.ticketId());
+        entity.setFlightId(domain.flightId());
+        entity.setSeatId(domain.seatId());
+        entity.setPrice(domain.price());
+        entity.setCurrency(domain.currency());
+        entity.setDescription(domain.description());
+
         return entity;
     }
 }
