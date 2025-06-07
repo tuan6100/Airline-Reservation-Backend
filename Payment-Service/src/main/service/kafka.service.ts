@@ -1,5 +1,6 @@
 import { Kafka, Consumer, Producer, KafkaMessage } from 'kafkajs';
-import logger from "winston";
+import logger from "../util/logger";
+
 
 export class KafkaService {
     private static instance: KafkaService;
@@ -39,8 +40,6 @@ export class KafkaService {
         try {
             await this.producer.connect();
             await this.consumer.connect();
-
-            // Subscribe to topics
             await this.consumer.subscribe({
                 topics: [
                     'order-events.created',
@@ -51,8 +50,6 @@ export class KafkaService {
                 ],
                 fromBeginning: false,
             });
-
-            // Start consuming
             await this.consumer.run({
                 eachMessage: async ({ topic, partition, message }) => {
                     await this.handleMessage(topic, message);

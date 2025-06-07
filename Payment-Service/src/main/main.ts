@@ -6,13 +6,11 @@ import compression from 'compression';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 
-import { AppDataSource } from '@/config/database.config';
+
 import { KafkaService } from './service/kafka.service';
+import {AppDataSource} from "./config/database.config";
+import logger from "./util/logger";
 
-
-// Background jobs
-import './jobs/payment.jobs';
-import logger from "winston";
 
 dotenv.config();
 
@@ -21,15 +19,10 @@ const port = process.env.PORT || 8003;
 
 async function startServer() {
     try {
-        // Initialize database
         await AppDataSource.initialize();
         logger.info('Database connected successfully');
-
-        // Initialize Kafka
         await KafkaService.getInstance().connect();
         logger.info('Kafka connected successfully');
-
-        // Middleware
         app.use(helmet({
             contentSecurityPolicy: {
                 directives: {
@@ -40,33 +33,20 @@ async function startServer() {
                 },
             },
         }));
-
         app.use(compression());
-        app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
-
-        // Rate limiting
-        app.use('/api', rateLimiter);
-
-        // CORS
+        app.use(morgan('combined', {
+            stream: {
+                write: (message) => logger.info(message.trim())
+            }
+        }));
         app.use(cors({
             origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
             credentials: true,
         }));
-
-        // Body parsers
-        app.use('/api/webhooks', express.raw({ type: 'application/json' })); // Raw for webhooks
+        app.use('/api/webhooks', express.raw({ type: 'application/json' }));
         app.use(express.json({ limit: '10mb' }));
         app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-        // Routes
-        app.use('/health', healthRoutes);
-        app.use('/api/webhooks', webhookRoutes);
-        app.use('/api/payments', paymentRoutes);
-
-        // Error handling
-        app.use(errorHandler);
-
-        // 404 handler
         app.use('*', (req, res) => {
             res.status(404).json({
                 success: false,
@@ -75,7 +55,6 @@ async function startServer() {
             });
         });
 
-        // Graceful shutdown
         process.on('SIGTERM', async () => {
             logger.info('SIGTERM received, shutting down gracefully');
             await gracefulShutdown();
@@ -86,9 +65,20 @@ async function startServer() {
             await gracefulShutdown();
         });
 
+        process.on('uncaughtException', (error) => {
+            logger.error('Uncaught Exception:', error);
+            process.exit(1);
+        });
+
+        process.on('unhandledRejection', (reason, promise) => {
+            logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+            process.exit(1);
+        });
+
         app.listen(port, () => {
             logger.info(`Payment Service started on port ${port}`);
             logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+            logger.info(`Health check available at: http://localhost:${port}/health`);
         });
 
     } catch (error) {
@@ -99,16 +89,12 @@ async function startServer() {
 
 async function gracefulShutdown() {
     try {
-        // Close database connection
         if (AppDataSource.isInitialized) {
             await AppDataSource.destroy();
             logger.info('Database connection closed');
         }
-
-        // Close Kafka connection
         await KafkaService.getInstance().disconnect();
         logger.info('Kafka connection closed');
-
         process.exit(0);
     } catch (error) {
         logger.error('Error during shutdown:', error);
@@ -116,4 +102,4 @@ async function gracefulShutdown() {
     }
 }
 
-startServer().then(logger.info(`Payment Service is listening on port ${port}`));
+startServer().then(() => logger.info(`App listening on port ${port}`));

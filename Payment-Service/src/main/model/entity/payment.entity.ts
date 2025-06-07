@@ -4,7 +4,7 @@ import {
     Column,
     CreateDateColumn,
     UpdateDateColumn,
-    Index, Long, ManyToOne,
+    Index, ManyToOne,
 } from 'typeorm';
 
 export enum PaymentStatus {
@@ -29,13 +29,13 @@ export enum PaymentMethodType {
 @Index(['status'])
 export class Payment {
     @PrimaryGeneratedColumn({ name: 'payment_id' })
-    paymentId: Long;
+    paymentId: number;
 
     @Column({ type: 'bigint', name: 'order_id' })
-    orderId: Long;
+    orderId: number;
 
     @Column({ type: 'bigint', name: 'customer_id' })
-    customerId: Long;
+    customerId: number;
 
     @Column({ type: 'bigint' })
     amount: number;

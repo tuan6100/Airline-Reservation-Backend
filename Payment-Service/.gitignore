@@ -1,3 +1,5 @@
 disc/
 node_modules/
 .env
+package-lock.json
+logs/

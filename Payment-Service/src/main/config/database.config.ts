@@ -1,19 +1,19 @@
 import { DataSource } from 'typeorm';
-import {Payment} from "@/main/model/entity/payment.entity";
-import {PaymentTransaction} from "@/main/model/entity/payment-transaction.entity";
-import logger from "winston";
-import {Refund} from "@/main/model/entity/refund.entity";
-import {OutboxMessage} from "@/main/model/entity/outbox-message.entity";
+import {Payment} from "../model/entity/payment.entity";
+import {PaymentTransaction} from "../model/entity/payment-transaction.entity";
+import {OutboxMessage} from "../model/entity/outbox-message.entity";
+import {Refund} from "../model/entity/refund.entity";
+import logger from "../util/logger";
 
 
 
 export const AppDataSource = new DataSource({
     type: 'postgres',
     host: process.env.DB_HOST ,
-    port: parseInt(process.env.DB_PORT?? '5432'),
-    username: process.env.DB_USERNAME ,
-    password: process.env.DB_PASSWORD ,
-    database: process.env.DB_NAME,
+    port: parseInt(process.env.DB_PORT ||  '5432'),
+    username: process.env.DB_USERNAME || '',
+    password: String(process.env.DB_PASSWORD || ''),
+    database: process.env.DB_NAME || '',
     synchronize: false,
     logging: process.env.NODE_ENV === 'development' ? 'all' : ['error'],
     entities: [
