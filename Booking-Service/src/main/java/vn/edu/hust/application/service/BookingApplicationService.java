@@ -6,17 +6,24 @@ import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.hust.application.dto.command.*;
 import vn.edu.hust.application.dto.query.*;
+import vn.edu.hust.domain.event.BookingConfirmedEvent;
+import vn.edu.hust.domain.model.enumeration.BookingStatus;
 import vn.edu.hust.domain.model.enumeration.TicketStatus;
-import vn.edu.hust.infrastructure.entity.TicketEntity;
+import vn.edu.hust.infrastructure.entity.BookingEntity;
+import vn.edu.hust.infrastructure.event.KafkaEventPublisher;
+import vn.edu.hust.infrastructure.repository.BookingJpaRepository;
 import vn.edu.hust.infrastructure.repository.TicketJpaRepository;
 import vn.edu.hust.infrastructure.repository.SeatClassJpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -32,10 +39,16 @@ public class BookingApplicationService {
     private TicketSearchService ticketSearchService;
 
     @Autowired
+    private BookingJpaRepository bookingRepository;
+
+    @Autowired
     private TicketJpaRepository ticketRepository;
 
     @Autowired
     private SeatClassJpaRepository seatClassRepository;
+
+    @Autowired
+    private KafkaEventPublisher kafkaEventPublisher;
 
     public CompletableFuture<TicketAvailabilityDTO> searchAvailableTickets(Long flightId) {
         try {
@@ -55,34 +68,78 @@ public class BookingApplicationService {
         }
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED, timeout = 30)
     public CompletableFuture<String> createBookingWithTickets(CreateBookingCommand command) {
-        return validateAndHoldTickets(command)
-                .thenCompose(validatedCommand -> {
-                    if (validatedCommand.getBookingId() == null) {
-                        validatedCommand.setBookingId(UUID.randomUUID().toString());
-                    }
-                    return commandGateway.send(validatedCommand);
-                });
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                if (command.getBookingId() == null) {
+                    command.setBookingId(UUID.randomUUID().toString());
+                }
+                if (!validateAndHoldTicketsOptimized(command)) {
+                    throw new RuntimeException("Failed to hold all required tickets");
+                }
+                String bookingId = commandGateway.sendAndWait(command);
+                log.info("Booking created successfully with optimized approach: {}", bookingId);
+                return bookingId;
+            } catch (Exception e) {
+                log.error("Failed to create booking: {}", e.getMessage());
+                throw new RuntimeException("Failed to create booking: " + e.getMessage(), e);
+            }
+        });
     }
 
-    private CompletableFuture<CreateBookingCommand> validateAndHoldTickets(CreateBookingCommand command) {
-        return CompletableFuture.supplyAsync(() -> {
-            for (CreateBookingCommand.TicketSelectionRequest selection : command.getTicketSelections()) {
-                TicketEntity ticket = ticketRepository.findById(selection.getTicketId())
-                        .orElseThrow(() -> new IllegalArgumentException("Ticket not found: " + selection.getTicketId()));
-
-                if (ticket.getStatus() != TicketStatus.AVAILABLE) {
-                    throw new IllegalStateException("Ticket " + selection.getTicketId() + " is not available");
-                }
-                Double correctPrice = getPriceFromSeatClass(selection.getSeatClassId());
-                selection.setPrice(correctPrice);
-                selection.setCurrency("VND");
-                holdTicketInternal(ticket);
+    private boolean validateAndHoldTicketsOptimized(CreateBookingCommand command) {
+        List<Long> ticketIds = command.getTicketSelections()
+                .stream()
+                .map(CreateBookingCommand.TicketSelectionRequest::getTicketId)
+                .collect(Collectors.toList());
+        List<Long> availableTickets = ticketRepository.findAvailableTicketIds(ticketIds);
+        if (availableTickets.size() != ticketIds.size()) {
+            log.warn("Not all tickets available. Required: {}, Available: {}",
+                    ticketIds.size(), availableTickets.size());
+            return false;
+        }
+        for (CreateBookingCommand.TicketSelectionRequest selection : command.getTicketSelections()) {
+            if (!holdTicketAtomically(selection, command.getBookingId())) {
+                rollbackHeldTickets(command.getBookingId());
+                return false;
             }
+        }
+        return true;
+    }
 
-            return command;
-        });
+    private boolean holdTicketAtomically(CreateBookingCommand.TicketSelectionRequest selection, String bookingId) {
+        try {
+            Double correctPrice = getPriceFromSeatClass(selection.getSeatClassId());
+            selection.setPrice(correctPrice);
+            selection.setCurrency("VND");
+            int rowsUpdated = ticketRepository.updateTicketStatusAtomic(
+                    selection.getTicketId(),
+                    TicketStatus.AVAILABLE,
+                    TicketStatus.HELD,
+                    bookingId,
+                    LocalDateTime.now()
+            );
+            if (rowsUpdated > 0) {
+                log.debug("Ticket {} held atomically for booking {}", selection.getTicketId(), bookingId);
+                return true;
+            } else {
+                log.warn("Failed to hold ticket {} - may already be taken", selection.getTicketId());
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("Error holding ticket {}: {}", selection.getTicketId(), e.getMessage());
+            return false;
+        }
+    }
+
+    private void rollbackHeldTickets(String bookingId) {
+        try {
+            int releasedCount = ticketRepository.bulkReleaseTicketsByBooking(bookingId, LocalDateTime.now());
+            log.info("Rolled back {} tickets for booking {}", releasedCount, bookingId);
+        } catch (Exception e) {
+            log.error("Failed to rollback tickets for booking {}: {}", bookingId, e.getMessage());
+        }
     }
 
     private Double getPriceFromSeatClass(Long seatClassId) {
@@ -95,29 +152,52 @@ public class BookingApplicationService {
         }
     }
 
-    private void holdTicketInternal(TicketEntity ticket) {
-        ticket.setStatus(TicketStatus.HELD);
-        ticketRepository.save(ticket);
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public CompletableFuture<Void> confirmBookingAndCreateOrder(String bookingId) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                BookingEntity booking = bookingRepository.findByIdWithLock(bookingId);
+                if (booking == null) {
+                    throw new IllegalArgumentException("Booking not found: " + bookingId);
+                }
+                if (booking.getStatus() != BookingStatus.PENDING) {
+                    throw new IllegalStateException("Booking is not in PENDING status: " + booking.getStatus());
+                }
+                if (booking.isExpired()) {
+                    throw new IllegalStateException("Booking has expired");
+                }
+
+                ConfirmBookingCommand confirmCommand = new ConfirmBookingCommand();
+                confirmCommand.setBookingId(bookingId);
+                commandGateway.sendAndWait(confirmCommand);
+
+                triggerOrderCreation(booking);
+                log.info("Booking confirmed and order creation triggered: {}", bookingId);
+            } catch (Exception e) {
+                log.error("Failed to confirm booking and create order: {}", e.getMessage());
+                throw new RuntimeException("Failed to confirm booking: " + e.getMessage(), e);
+            }
+        });
     }
 
+    private void triggerOrderCreation(BookingEntity booking) {
+        try {
+            kafkaEventPublisher.handleBookingConfirmedEvent(new BookingConfirmedEvent(booking.getBookingId()));
+        } catch (Exception e) {
+            log.error("Failed to publish order creation event for booking {}: {}",
+                    booking.getBookingId(), e.getMessage());
+        }
+    }
 
     @Transactional
-    public CompletableFuture<Void> confirmBookingAndCreateOrder(String bookingId) {
-        return getBooking(bookingId)
-                .thenCompose(booking -> {
-                    if (booking == null) {
-                        throw new IllegalArgumentException("Booking not found: " + bookingId);
-                    }
-                    return confirmBooking(bookingId)
-                            .thenCompose(result -> {
-                                return triggerOrderCreation(booking);
-                            });
-                });
-    }
-
-    private CompletableFuture<Void> triggerOrderCreation(BookingDTO booking) {
-        return CompletableFuture.runAsync(() -> {
-            BookingApplicationService.log.info("Booking confirmed, Order Service will receive event: {}", booking.getBookingId());
+    public CompletableFuture<Integer> releaseBookingTickets(String bookingId) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return ticketRepository.bulkReleaseTicketsByBooking(bookingId, LocalDateTime.now());
+            } catch (Exception e) {
+                log.error("Failed to release tickets for booking {}: {}", bookingId, e.getMessage());
+                return 0;
+            }
         });
     }
 
@@ -148,6 +228,7 @@ public class BookingApplicationService {
         command.setBookingId(bookingId);
         command.setReason(reason);
         commandGateway.send(command);
+        releaseBookingTickets(bookingId);
     }
 
     public CompletableFuture<List<BookingDTO>> getBookingsByCustomer(Long customerId) {

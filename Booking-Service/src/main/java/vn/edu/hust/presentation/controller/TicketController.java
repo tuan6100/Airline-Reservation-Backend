@@ -38,7 +38,7 @@ public class TicketController {
             @RequestParam Long customerId,
             @RequestParam(required = false, defaultValue = "15") Integer holdDurationMinutes) {
         return ticketApplicationService.holdTicket(ticketId, customerId, holdDurationMinutes)
-                .thenApply(result -> ResponseEntity.ok().build());
+                .thenApply(_ -> ResponseEntity.ok().build());
     }
 
     @PostMapping("/{ticketId}/book")
@@ -47,13 +47,13 @@ public class TicketController {
             @RequestParam Long customerId,
             @RequestParam String bookingId) {
         return ticketApplicationService.bookTicket(ticketId, customerId, bookingId)
-                .thenApply(result -> ResponseEntity.ok().build());
+                .thenApply(_ -> ResponseEntity.ok().build());
     }
 
     @PostMapping("/{ticketId}/release")
     public CompletableFuture<ResponseEntity<Void>> releaseTicket(@PathVariable Long ticketId) {
         return ticketApplicationService.releaseTicket(ticketId)
-                .thenApply(result -> ResponseEntity.ok().build());
+                .thenApply(_ -> ResponseEntity.ok().build());
     }
 
     @PostMapping("/{ticketId}/cancel")
@@ -61,7 +61,7 @@ public class TicketController {
             @PathVariable Long ticketId,
             @RequestParam String reason) {
         return ticketApplicationService.cancelTicket(ticketId, reason)
-                .thenApply(result -> ResponseEntity.ok().build());
+                .thenApply(_ -> ResponseEntity.ok().build());
     }
 
     @GetMapping("/flight/{flightId}")

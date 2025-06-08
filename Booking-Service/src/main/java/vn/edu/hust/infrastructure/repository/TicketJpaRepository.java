@@ -4,6 +4,7 @@ import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.edu.hust.domain.model.enumeration.TicketStatus;
@@ -15,6 +16,7 @@ import java.util.Optional;
 
 @Repository
 public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
+
     List<TicketEntity> findByFlightId(Long flightId);
 
     @Query("SELECT t FROM TicketEntity t WHERE t.flightId = :flightId AND t.status = 0")
@@ -32,7 +34,7 @@ public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
     @Query("SELECT t FROM TicketEntity t WHERE t.ticketId = :ticketId AND t.status = :expectedStatus")
     Optional<TicketEntity> findByIdAndStatusWithLock(
             @Param("ticketId") Long ticketId,
-            @Param("expectedStatus") vn.edu.hust.domain.model.enumeration.TicketStatus expectedStatus
+            @Param("expectedStatus") TicketStatus expectedStatus
     );
 
     @Query("SELECT t FROM TicketEntity t WHERE t.status = 1")
@@ -68,4 +70,76 @@ public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
             @Param("flightId") Long flightId,
             @Param("seatClassId") Long seatClassId
     );
+
+    @Query("SELECT t FROM TicketEntity t " +
+            "WHERE t.status = 1 " +
+            "AND t.updatedAt < :expiredBefore")
+    List<TicketEntity> findExpiredHeldTickets(@Param("expiredBefore") LocalDateTime expiredBefore);
+
+    @Modifying
+    @Query("UPDATE TicketEntity t SET t.status = 0, t.bookingId = NULL, t.updatedAt = :updateTime " +
+            "WHERE t.status = 1 AND t.updatedAt < :expiredBefore")
+    int bulkReleaseExpiredHeldTickets(
+            @Param("expiredBefore") LocalDateTime expiredBefore,
+            @Param("updateTime") LocalDateTime updateTime
+    );
+
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END " +
+            "FROM TicketEntity t " +
+            "WHERE t.ticketId = :ticketId AND t.status = 0")
+    boolean isTicketAvailable(@Param("ticketId") Long ticketId);
+
+    @Query("SELECT t.ticketId FROM TicketEntity t " +
+            "WHERE t.ticketId IN :ticketIds AND t.status = 0")
+    List<Long> findAvailableTicketIds(@Param("ticketIds") List<Long> ticketIds);
+
+    @Modifying
+    @Query("UPDATE TicketEntity t SET " +
+            "t.status = :newStatus, " +
+            "t.bookingId = :bookingId, " +
+            "t.updatedAt = :updateTime " +
+            "WHERE t.ticketId = :ticketId " +
+            "AND t.status = :currentStatus")
+    int updateTicketStatusAtomic(
+            @Param("ticketId") Long ticketId,
+            @Param("currentStatus") TicketStatus currentStatus,
+            @Param("newStatus") TicketStatus newStatus,
+            @Param("bookingId") String bookingId,
+            @Param("updateTime") LocalDateTime updateTime
+    );
+
+    @Modifying
+    @Query("UPDATE TicketEntity t SET " +
+            "t.status = 0, " +
+            "t.bookingId = NULL, " +
+            "t.updatedAt = :updateTime " +
+            "WHERE t.ticketId = :ticketId " +
+            "AND t.status = :currentStatus")
+    int releaseTicketAtomic(
+            @Param("ticketId") Long ticketId,
+            @Param("currentStatus") TicketStatus currentStatus,
+            @Param("updateTime") LocalDateTime updateTime
+    );
+
+    @Modifying
+    @Query("UPDATE TicketEntity t SET " +
+            "t.status = 0, " +
+            "t.bookingId = NULL, " +
+            "t.updatedAt = :updateTime " +
+            "WHERE t.bookingId = :bookingId")
+    int bulkReleaseTicketsByBooking(
+            @Param("bookingId") String bookingId,
+            @Param("updateTime") LocalDateTime updateTime
+    );
+
+    @Query("SELECT COUNT(t) FROM TicketEntity t " +
+            "WHERE t.flightId = :flightId AND t.status = 1 " +
+            "AND t.updatedAt > :recentTime")
+    long countRecentlyHeldTickets(
+            @Param("flightId") Long flightId,
+            @Param("recentTime") LocalDateTime recentTime
+    );
+
+    @Query("SELECT t FROM TicketEntity t WHERE t.ticketId = :ticketId")
+    Optional<TicketEntity> findByIdForUpdate(@Param("ticketId") Long ticketId);
 }

@@ -23,7 +23,7 @@ public class BookingController {
     public CompletableFuture<ResponseEntity<TicketAvailabilityDTO>> getTicketAvailability(@PathVariable Long flightId) {
         return bookingService.searchAvailableTickets(flightId)
                 .thenApply(ResponseEntity::ok)
-                .exceptionally(ex -> ResponseEntity.badRequest().build());
+                .exceptionally(_ -> ResponseEntity.badRequest().build());
     }
 
     @GetMapping("/flights/{flightId}/tickets")
@@ -32,23 +32,21 @@ public class BookingController {
             @RequestParam(required = false) Long seatClassId) {
         return bookingService.searchTicketsBySeatClass(flightId, seatClassId)
                 .thenApply(ResponseEntity::ok)
-                .exceptionally(ex -> ResponseEntity.badRequest().build());
+                .exceptionally(_ -> ResponseEntity.badRequest().build());
     }
 
     @PostMapping("/with-tickets")
     public CompletableFuture<ResponseEntity<String>> createBookingWithTickets(@RequestBody CreateBookingCommand command) {
         return bookingService.createBookingWithTickets(command)
                 .thenApply(bookingId -> new ResponseEntity<>(bookingId, HttpStatus.CREATED))
-                .exceptionally(ex -> {
-                    return new ResponseEntity<>("Failed to create booking: " + ex.getMessage(),
-                            HttpStatus.BAD_REQUEST);
-                });
+                .exceptionally(ex -> new ResponseEntity<>("Failed to create booking: " + ex.getMessage(),
+                        HttpStatus.BAD_REQUEST));
     }
 
     @PostMapping("/{bookingId}/confirm-and-order")
     public CompletableFuture<ResponseEntity<String>> confirmBookingAndCreateOrder(@PathVariable String bookingId) {
         return bookingService.confirmBookingAndCreateOrder(bookingId)
-                .thenApply(result -> ResponseEntity.ok("Booking confirmed and order creation triggered"))
+                .thenApply(_ -> ResponseEntity.ok("Booking confirmed and order creation triggered"))
                 .exceptionally(ex -> ResponseEntity.badRequest()
                         .body("Failed to confirm booking: " + ex.getMessage()));
     }
