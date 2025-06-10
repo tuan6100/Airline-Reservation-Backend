@@ -30,7 +30,7 @@ public interface BookingJpaRepository extends JpaRepository<BookingEntity, Strin
 
     @Modifying
     @Query("UPDATE BookingEntity b SET b.status = :newStatus, b.updatedAt = :updateTime " +
-            "WHERE b.bookingId = :bookingId AND b.status = :currentStatus")
+            "WHERE b.bookingId = :bookingId AND b.status = :currentStatus ")
     int updateBookingStatusAtomic(
             @Param("bookingId") String bookingId,
             @Param("currentStatus") BookingStatus currentStatus,

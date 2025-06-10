@@ -10,14 +10,9 @@ import vn.edu.hust.integration.event.OrderCreationRequestEvent;
 
 @Component
 public class KafkaEventPublisher {
-    private final KafkaTemplate<String, Object> kafkaTemplate;
-    private final ObjectMapper objectMapper;
 
     @Autowired
-    public KafkaEventPublisher(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
-        this.kafkaTemplate = kafkaTemplate;
-        this.objectMapper = objectMapper;
-    }
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     @EventListener
     public void handleBookingCreatedEvent(BookingCreatedEvent event) {

@@ -89,7 +89,6 @@ public class Booking {
         if (status != BookingStatus.PENDING) {
             throw new IllegalStateException("Can only add tickets to pending bookings");
         }
-
         if (isExpired()) {
             throw new IllegalStateException("Booking has expired");
         }
@@ -218,21 +217,4 @@ public class Booking {
         this.totalAmount = seatTotal + ticketTotal;
     }
 
-    public int getTotalSeats() {
-        return seatReservations.size();
-    }
-
-    public int getTotalTickets() {
-        return ticketReservations.size();
-    }
-
-    public boolean hasTicket(Long ticketId) {
-        return ticketReservations.stream()
-                .anyMatch(tr -> tr.getTicketId().equals(ticketId));
-    }
-
-    public boolean hasSeat(Long seatId) {
-        return seatReservations.stream()
-                .anyMatch(sr -> sr.seatId().equals(seatId));
-    }
 }

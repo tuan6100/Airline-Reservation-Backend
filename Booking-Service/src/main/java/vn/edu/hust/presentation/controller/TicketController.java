@@ -5,8 +5,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.edu.hust.application.dto.command.CreateTicketCommand;
+import vn.edu.hust.application.dto.query.GetAvailableTicketsQuery;
 import vn.edu.hust.application.dto.query.TicketDTO;
-import vn.edu.hust.application.dto.query.TicketSummaryDTO;
 import vn.edu.hust.application.service.TicketApplicationService;
 
 import java.util.List;
@@ -19,12 +19,6 @@ public class TicketController {
 
     @Autowired
     private TicketApplicationService ticketApplicationService;
-
-    @PostMapping
-    public CompletableFuture<ResponseEntity<Long>> createTicket(@RequestBody CreateTicketCommand command) {
-        return ticketApplicationService.createTicket(command)
-                .thenApply(ticketId -> new ResponseEntity<>(ticketId, HttpStatus.CREATED));
-    }
 
     @GetMapping("/{ticketId}")
     public CompletableFuture<ResponseEntity<TicketDTO>> getTicket(@PathVariable Long ticketId) {
@@ -70,16 +64,14 @@ public class TicketController {
                 .thenApply(ResponseEntity::ok);
     }
 
-    @GetMapping("/flight/{flightId}/available")
-    public CompletableFuture<ResponseEntity<List<TicketDTO>>> getAvailableTickets(@PathVariable Long flightId) {
-        return ticketApplicationService.getAvailableTickets(flightId)
-                .thenApply(ResponseEntity::ok);
-    }
-
-    @GetMapping("/customer/{customerId}")
-    public CompletableFuture<ResponseEntity<List<TicketSummaryDTO>>> getTicketsByCustomer(@PathVariable Long customerId) {
-        return ticketApplicationService.getTicketsByCustomer(customerId)
-                .thenApply(ResponseEntity::ok);
+    @GetMapping("/flight/available")
+    public CompletableFuture<ResponseEntity<TicketDTO>> getAvailableTickets(
+            @RequestBody GetAvailableTicketsQuery availableTicketsQuery) {
+        return ticketApplicationService.getAvailableTickets(
+                availableTicketsQuery.getFlightId(),
+                availableTicketsQuery.getFlightDepartureTime(),
+                availableTicketsQuery.getSeatId()
+                ).thenApply(ResponseEntity::ok);
     }
 }
 

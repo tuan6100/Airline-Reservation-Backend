@@ -9,6 +9,7 @@ import vn.edu.hust.application.dto.command.*;
 import vn.edu.hust.application.dto.query.TicketDTO;
 import vn.edu.hust.application.dto.query.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -21,9 +22,6 @@ public class TicketApplicationService {
     @Autowired
     private QueryGateway queryGateway;
 
-    public CompletableFuture<Long> createTicket(CreateTicketCommand command) {
-        return commandGateway.send(command);
-    }
 
     public CompletableFuture<Void> holdTicket(Long ticketId, Long customerId, Integer holdDurationMinutes) {
         HoldTicketCommand command = new HoldTicketCommand();
@@ -66,15 +64,15 @@ public class TicketApplicationService {
         return queryGateway.query(query, ResponseTypes.multipleInstancesOf(TicketDTO.class));
     }
 
-    public CompletableFuture<List<TicketDTO>> getAvailableTickets(Long flightId) {
+    public CompletableFuture<TicketDTO> getAvailableTickets(
+            Long flightId,
+            LocalDateTime flightDepartureTime,
+            Long seatId
+    ) {
         GetAvailableTicketsQuery query = new GetAvailableTicketsQuery();
         query.setFlightId(flightId);
-        return queryGateway.query(query, ResponseTypes.multipleInstancesOf(TicketDTO.class));
-    }
-
-    public CompletableFuture<List<TicketSummaryDTO>> getTicketsByCustomer(Long customerId) {
-        GetTicketsByCustomerQuery query = new GetTicketsByCustomerQuery();
-        query.setCustomerId(customerId);
-        return queryGateway.query(query, ResponseTypes.multipleInstancesOf(TicketSummaryDTO.class));
+        query.setFlightDepartureTime(flightDepartureTime);
+        query.setSeatId(seatId);
+        return queryGateway.query(query, TicketDTO.class);
     }
 }

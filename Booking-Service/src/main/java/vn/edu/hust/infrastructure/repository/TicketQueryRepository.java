@@ -1,14 +1,13 @@
 package vn.edu.hust.infrastructure.repository;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import vn.edu.hust.application.dto.query.TicketDTO;
-import vn.edu.hust.application.dto.query.TicketSummaryDTO;
-import vn.edu.hust.application.service.FlightService;
-import vn.edu.hust.infrastructure.entity.SeatEntity;
 import vn.edu.hust.infrastructure.entity.TicketEntity;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,14 +18,10 @@ public class TicketQueryRepository {
     @Autowired
     private TicketJpaRepository ticketRepository;
 
-    @Autowired
-    private SeatJpaRepository seatRepository;
-
-    @Autowired
-    private FlightService flightService;
-
     public TicketDTO findByTicketId(Long ticketId) {
-        TicketEntity ticketEntity = ticketRepository.findById(ticketId).get();
+
+        TicketEntity ticketEntity = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new EntityNotFoundException("Ticket not found"));
         TicketDTO dto = new TicketDTO();
         dto.setTicketId(ticketEntity.getTicketId());
         dto.setTicketCode(ticketEntity.getTicketCode());
@@ -45,11 +40,9 @@ public class TicketQueryRepository {
                 .collect(Collectors.toList());
     }
 
-    public List<TicketDTO> findAvailableByFlightId(Long flightId) {
-        return ticketRepository.findAvailableByFlightId(flightId)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public TicketDTO findAvailableByFlightId(Long flightId, LocalDateTime flightDepartureTime, Long seatId) {
+        TicketEntity ticketEntity = ticketRepository.findAvailable(flightId, flightDepartureTime, seatId);
+        return convertToDTO(ticketEntity);
     }
 
     private TicketDTO convertToDTO(TicketEntity ticketEntity) {
@@ -61,32 +54,6 @@ public class TicketQueryRepository {
         dto.setSeatId(ticketEntity.getSeat().getSeatId());
         dto.setStatus(ticketEntity.getStatus());
         dto.setCreatedAt(ticketEntity.getCreatedAt());
-        return dto;
-    }
-
-    private TicketSummaryDTO convertToSummaryDTO(TicketEntity ticketEntity) {
-        TicketSummaryDTO dto = new TicketSummaryDTO();
-        dto.setTicketId(ticketEntity.getTicketId());
-        dto.setTicketCode(ticketEntity.getTicketCode());
-        dto.setFlightId(ticketEntity.getFlightId());
-        dto.setSeatId(ticketEntity.getSeat().getSeatId());
-        dto.setStatus(ticketEntity.getStatus());
-        dto.setCreatedAt(ticketEntity.getCreatedAt());
-        dto.setDepartureTime(ticketEntity.getFlightDepartureTime());
-        SeatEntity seatEntity = seatRepository.findById(ticketEntity.getSeat().getSeatId()).get();
-        dto.setSeatCode(seatEntity.getSeatCode());
-        try {
-            var flightDetails = flightService.getFlightDetails(
-                    new vn.edu.hust.domain.model.valueobj.FlightId(ticketEntity.getFlightId())
-            );
-            if (flightDetails != null) {
-                dto.setFlightNumber(flightDetails.getFlightNumber());
-                dto.setDepartureAirport(flightDetails.getDepartureAirportCode());
-                dto.setArrivalAirport(flightDetails.getArrivalAirportCode());
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage());
-        }
         return dto;
     }
 

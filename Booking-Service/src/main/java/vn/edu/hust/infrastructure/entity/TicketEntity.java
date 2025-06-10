@@ -29,6 +29,7 @@ public class TicketEntity {
     @Column(name = "flight_id", nullable = false)
     private Long flightId;
 
+    @Temporal(value = TemporalType.TIME)
     @Column(name = "flight_departure_time")
     private LocalDateTime flightDepartureTime;
 

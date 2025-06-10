@@ -211,10 +211,10 @@ public class BookingApplicationService {
         return commandGateway.send(command);
     }
 
-    public CompletableFuture<Void> confirmBooking(String bookingId) {
+    public void confirmBooking(String bookingId) {
         ConfirmBookingCommand command = new ConfirmBookingCommand();
         command.setBookingId(bookingId);
-        return commandGateway.send(command);
+        commandGateway.send(command);
     }
 
     public CompletableFuture<BookingDTO> getBooking(String bookingId) {

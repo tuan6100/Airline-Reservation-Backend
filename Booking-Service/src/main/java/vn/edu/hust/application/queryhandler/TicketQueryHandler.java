@@ -25,8 +25,8 @@ public class TicketQueryHandler {
     }
 
     @QueryHandler
-    public List<TicketDTO> handle(GetAvailableTicketsQuery query) {
-        return ticketQueryRepository.findAvailableByFlightId(query.getFlightId());
+    public TicketDTO handle(GetAvailableTicketsQuery query) {
+        return ticketQueryRepository.findAvailableByFlightId(query.getFlightId(), query.getFlightDepartureTime(), query.getSeatId());
     }
 
 }

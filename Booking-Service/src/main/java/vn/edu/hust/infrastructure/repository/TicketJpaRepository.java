@@ -19,10 +19,17 @@ public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
 
     List<TicketEntity> findByFlightId(Long flightId);
 
-    @Query("SELECT t FROM TicketEntity t WHERE t.flightId = :flightId AND t.status = 0")
-    List<TicketEntity> findAvailableByFlightId(@Param("flightId") Long flightId);
+    @Query("SELECT t FROM TicketEntity t " +
+            "WHERE t.flightId = :flightId " +
+            "AND t.flightDepartureTime = :flightDepartureTime " +
+            "AND t.seat.seatId = :seatId " +
+            "AND t.status = 0")
+    TicketEntity findAvailable(
+            @Param("flightId") Long flightId,
+            @Param("flightDepartureTime") LocalDateTime flightDepartureTime,
+            @Param("seatId") Long seatId
+    );
 
-    TicketEntity findByTicketId(Long ticketId);
     List<TicketEntity> findByBookingId(String bookingId);
     List<TicketEntity> findByStatus(TicketStatus status);
 
