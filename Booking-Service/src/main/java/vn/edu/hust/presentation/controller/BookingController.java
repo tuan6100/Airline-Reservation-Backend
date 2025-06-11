@@ -13,20 +13,19 @@ import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/bookings")
-@CrossOrigin(origins = "*")
 public class BookingController {
 
     @Autowired
     private BookingApplicationService bookingService;
 
-    @GetMapping("/flights/{flightId}/tickets/availability")
+    @GetMapping("/v1/flights/{flightId}/tickets/availability")
     public CompletableFuture<ResponseEntity<TicketAvailabilityDTO>> getTicketAvailability(@PathVariable Long flightId) {
         return bookingService.searchAvailableTickets(flightId)
                 .thenApply(ResponseEntity::ok)
                 .exceptionally(_ -> ResponseEntity.badRequest().build());
     }
 
-    @GetMapping("/flights/{flightId}/tickets")
+    @GetMapping("/v1/flights/{flightId}/tickets")
     public CompletableFuture<ResponseEntity<List<TicketSearchDTO>>> searchTickets(
             @PathVariable Long flightId,
             @RequestParam(required = false) Long seatClassId) {
@@ -35,7 +34,8 @@ public class BookingController {
                 .exceptionally(_ -> ResponseEntity.badRequest().build());
     }
 
-    @PostMapping("/with-tickets")
+    @Deprecated
+    @PostMapping("/v1/with-tickets")
     public CompletableFuture<ResponseEntity<String>> createBookingWithTickets(@RequestBody CreateBookingCommand command) {
         return bookingService.createBookingWithTickets(command)
                 .thenApply(bookingId -> new ResponseEntity<>(bookingId, HttpStatus.CREATED))
@@ -43,7 +43,8 @@ public class BookingController {
                         HttpStatus.BAD_REQUEST));
     }
 
-    @PostMapping("/{bookingId}/confirm-and-order")
+    @Deprecated
+    @PostMapping("/v1/{bookingId}/confirm-and-order")
     public CompletableFuture<ResponseEntity<String>> confirmBookingAndCreateOrder(@PathVariable String bookingId) {
         return bookingService.confirmBookingAndCreateOrder(bookingId)
                 .thenApply(_ -> ResponseEntity.ok("Booking confirmed and order creation triggered"))
@@ -51,13 +52,13 @@ public class BookingController {
                         .body("Failed to confirm booking: " + ex.getMessage()));
     }
 
-    @GetMapping("/{bookingId}")
+    @GetMapping("/v1/{bookingId}")
     public CompletableFuture<ResponseEntity<BookingDTO>> getBooking(@PathVariable String bookingId) {
         return bookingService.getBooking(bookingId)
                 .thenApply(ResponseEntity::ok);
     }
 
-    @GetMapping("/customer/{customerId}")
+    @GetMapping("/v1/customer/{customerId}")
     public CompletableFuture<ResponseEntity<List<BookingDTO>>> getBookingsByCustomer(@PathVariable Long customerId) {
         return bookingService.getBookingsByCustomer(customerId)
                 .thenApply(ResponseEntity::ok);

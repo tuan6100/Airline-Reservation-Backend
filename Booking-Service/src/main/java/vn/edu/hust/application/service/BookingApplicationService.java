@@ -152,6 +152,7 @@ public class BookingApplicationService {
         }
     }
 
+    @Deprecated
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public CompletableFuture<Void> confirmBookingAndCreateOrder(String bookingId) {
         return CompletableFuture.runAsync(() -> {
@@ -166,11 +167,9 @@ public class BookingApplicationService {
                 if (booking.isExpired()) {
                     throw new IllegalStateException("Booking has expired");
                 }
-
                 ConfirmBookingCommand confirmCommand = new ConfirmBookingCommand();
                 confirmCommand.setBookingId(bookingId);
                 commandGateway.sendAndWait(confirmCommand);
-
                 triggerOrderCreation(booking);
                 log.info("Booking confirmed and order creation triggered: {}", bookingId);
             } catch (Exception e) {
@@ -180,6 +179,7 @@ public class BookingApplicationService {
         });
     }
 
+    @Deprecated
     private void triggerOrderCreation(BookingEntity booking) {
         try {
             kafkaEventPublisher.handleBookingConfirmedEvent(new BookingConfirmedEvent(booking.getBookingId()));
@@ -199,16 +199,6 @@ public class BookingApplicationService {
                 return 0;
             }
         });
-    }
-
-    public CompletableFuture<Void> addTicketToBooking(String bookingId, Long ticketId, Long seatId, Double price, String currency) {
-        AddTicketToBookingCommand command = new AddTicketToBookingCommand();
-        command.setBookingId(bookingId);
-        command.setTicketId(ticketId);
-        command.setSeatId(seatId);
-        command.setPrice(price);
-        command.setCurrency(currency);
-        return commandGateway.send(command);
     }
 
     public void confirmBooking(String bookingId) {

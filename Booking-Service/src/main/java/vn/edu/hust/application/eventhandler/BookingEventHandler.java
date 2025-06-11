@@ -157,7 +157,7 @@ public class BookingEventHandler {
             backoff = @Backoff(delay = 50, multiplier = 1.5)
     )
     public void on(SeatHeldEvent event) {
-        SeatEntity seatEntity = seatJpaRepository.findByIdWithPessimisticLock(event.seatId());
+        SeatEntity seatEntity = seatJpaRepository.findByIdWithLock(event.seatId());
         if (seatEntity != null) {
             if (seatEntity.getStatus() == SeatStatus.AVAILABLE) {
                 seatEntity.setStatus(SeatStatus.ON_HOLD);
@@ -180,7 +180,7 @@ public class BookingEventHandler {
             backoff = @Backoff(delay = 50, multiplier = 1.5)
     )
     public void on(SeatReleasedEvent event) {
-        SeatEntity seatEntity = seatJpaRepository.findByIdWithPessimisticLock(event.seatId());
+        SeatEntity seatEntity = seatJpaRepository.findByIdWithLock(event.seatId());
         if (seatEntity != null) {
             seatEntity.setStatus(SeatStatus.AVAILABLE);
             seatJpaRepository.save(seatEntity);

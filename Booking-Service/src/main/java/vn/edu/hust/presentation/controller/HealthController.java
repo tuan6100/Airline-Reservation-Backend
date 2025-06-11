@@ -15,13 +15,13 @@ public class HealthController {
     @Autowired
     private BookingExpirationService cleanupService;
 
-    @GetMapping("/cleanup-stats")
+    @GetMapping("/v1/cleanup-stats")
     public ResponseEntity<BookingExpirationService.CleanupStatistics> getCleanupStatistics() {
         BookingExpirationService.CleanupStatistics stats = cleanupService.getCleanupStatistics();
         return ResponseEntity.ok(stats);
     }
 
-    @GetMapping("/cleanup-health")
+    @GetMapping("/v1/cleanup-health")
     public ResponseEntity<HealthStatus> getCleanupHealth() {
         BookingExpirationService.CleanupStatistics stats = cleanupService.getCleanupStatistics();
         boolean isHealthy = stats.expiredPendingBookings() < 100 &&
@@ -33,7 +33,7 @@ public class HealthController {
         return ResponseEntity.ok(new HealthStatus(status, message, stats));
     }
 
-    @PostMapping("/emergency-cleanup")
+    @PostMapping("/v1/emergency-cleanup")
     public ResponseEntity<String> triggerEmergencyCleanup() {
         try {
             cleanupService.emergencyCleanup();

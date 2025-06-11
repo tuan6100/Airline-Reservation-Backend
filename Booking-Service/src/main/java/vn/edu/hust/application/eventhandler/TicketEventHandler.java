@@ -61,7 +61,7 @@ public class TicketEventHandler {
             backoff = @Backoff(delay = 100, multiplier = 2)
     )
     public void on(TicketHeldEvent event) {
-        TicketEntity ticketEntity = ticketJpaRepository.findByIdWithPessimisticLock(event.ticketId());
+        TicketEntity ticketEntity = ticketJpaRepository.findByIdWithLock(event.ticketId());
         if (ticketEntity != null) {
             if (ticketEntity.getStatus() == TicketStatus.AVAILABLE) {
                 ticketEntity.setStatus(TicketStatus.HELD);
@@ -84,8 +84,7 @@ public class TicketEventHandler {
             backoff = @Backoff(delay = 100, multiplier = 2)
     )
     public void on(TicketBookedEvent event) {
-        TicketEntity ticketEntity = ticketJpaRepository.findByIdWithPessimisticLock(event.ticketId());
-
+        TicketEntity ticketEntity = ticketJpaRepository.findByIdWithLock(event.ticketId());
         if (ticketEntity != null) {
             if (ticketEntity.getStatus() == TicketStatus.HELD ||
                     ticketEntity.getStatus() == TicketStatus.AVAILABLE) {
@@ -110,7 +109,7 @@ public class TicketEventHandler {
             backoff = @Backoff(delay = 100, multiplier = 2)
     )
     public void on(TicketReleasedEvent event) {
-        TicketEntity ticketEntity = ticketJpaRepository.findByIdWithPessimisticLock(event.ticketId());
+        TicketEntity ticketEntity = ticketJpaRepository.findByIdWithLock(event.ticketId());
 
         if (ticketEntity != null) {
             ticketEntity.setStatus(TicketStatus.AVAILABLE);
@@ -131,7 +130,7 @@ public class TicketEventHandler {
             backoff = @Backoff(delay = 100, multiplier = 2)
     )
     public void on(TicketCancelledEvent event) {
-        TicketEntity ticketEntity = ticketJpaRepository.findByIdWithPessimisticLock(event.ticketId());
+        TicketEntity ticketEntity = ticketJpaRepository.findByIdWithLock(event.ticketId());
 
         if (ticketEntity != null) {
             ticketEntity.setStatus(TicketStatus.CANCELLED);

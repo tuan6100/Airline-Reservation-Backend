@@ -20,6 +20,17 @@ public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
     List<TicketEntity> findByFlightId(Long flightId);
 
     @Query("SELECT t FROM TicketEntity t " +
+            "WHERE t.seat.seatId = :seatId " +
+            "AND t.flightId = :flightId " +
+            "AND t.flightDepartureTime = :flightDepartureTime " +
+            "ORDER BY t.createdAt")
+    List<TicketEntity> findTicketsBySeatAndFlightAndTime(
+            @Param("seatId") Long seatId,
+            @Param("flightId") Long flightId,
+            @Param("flightDepartureTime") LocalDateTime flightDepartureTime
+    );
+
+    @Query("SELECT t FROM TicketEntity t " +
             "WHERE t.flightId = :flightId " +
             "AND t.flightDepartureTime = :flightDepartureTime " +
             "AND t.seat.seatId = :seatId " +
@@ -33,11 +44,11 @@ public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
     List<TicketEntity> findByBookingId(String bookingId);
     List<TicketEntity> findByStatus(TicketStatus status);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     @Query("SELECT t FROM TicketEntity t WHERE t.ticketId = :ticketId")
-    TicketEntity findByIdWithPessimisticLock(@Param("ticketId") Long ticketId);
+    TicketEntity findByIdWithLock(@Param("ticketId") Long ticketId);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     @Query("SELECT t FROM TicketEntity t WHERE t.ticketId = :ticketId AND t.status = :expectedStatus")
     Optional<TicketEntity> findByIdAndStatusWithLock(
             @Param("ticketId") Long ticketId,
@@ -101,6 +112,27 @@ public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
     List<Long> findAvailableTicketIds(@Param("ticketIds") List<Long> ticketIds);
 
     @Modifying
+    @Query(value = """
+        UPDATE ticket SET
+            status = 2,
+            booking_id = :bookingId,
+            updated_at = :updateTime,
+            version = version + 1
+        WHERE ticket_id = :ticketId
+        AND status = 0 OR (status = 1 AND booking_id = :bookingId)
+        """, nativeQuery = true)
+    int bookTicketAtomic(
+            @Param("ticketId") Long ticketId,
+            @Param("bookingId") String bookingId,
+            @Param("updateTime") LocalDateTime updateTime
+    );
+
+    default boolean canBookTicketAtomic(Long ticketId, Long customerId, String bookingId) {
+        int updatedRows = bookTicketAtomic(ticketId, bookingId, LocalDateTime.now());
+        return updatedRows > 0;
+    }
+
+    @Modifying
     @Query("UPDATE TicketEntity t SET " +
             "t.status = :newStatus, " +
             "t.bookingId = :bookingId, " +
@@ -138,15 +170,4 @@ public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
             @Param("bookingId") String bookingId,
             @Param("updateTime") LocalDateTime updateTime
     );
-
-    @Query("SELECT COUNT(t) FROM TicketEntity t " +
-            "WHERE t.flightId = :flightId AND t.status = 1 " +
-            "AND t.updatedAt > :recentTime")
-    long countRecentlyHeldTickets(
-            @Param("flightId") Long flightId,
-            @Param("recentTime") LocalDateTime recentTime
-    );
-
-    @Query("SELECT t FROM TicketEntity t WHERE t.ticketId = :ticketId")
-    Optional<TicketEntity> findByIdForUpdate(@Param("ticketId") Long ticketId);
 }

@@ -43,8 +43,8 @@ domain:
 
 services:
   flight:
-    url: http://flight-service
+    url: http://localhost:8004
   order:
-    url: http://order-service
+    url: http://localhost:8002
   payment:
-    url: http://payment-service
+    url: http://localhost:8003

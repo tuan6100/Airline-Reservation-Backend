@@ -16,7 +16,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "\"Ticket\"")
+@Table(name = "\"tickets\"")
 public class TicketEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,7 +29,6 @@ public class TicketEntity {
     @Column(name = "flight_id", nullable = false)
     private Long flightId;
 
-    @Temporal(value = TemporalType.TIME)
     @Column(name = "flight_departure_time")
     private LocalDateTime flightDepartureTime;
 

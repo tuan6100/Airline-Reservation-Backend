@@ -19,14 +19,11 @@ public class TicketQueryRepository {
     private TicketJpaRepository ticketRepository;
 
     public TicketDTO findByTicketId(Long ticketId) {
-
         TicketEntity ticketEntity = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new EntityNotFoundException("Ticket not found"));
         TicketDTO dto = new TicketDTO();
         dto.setTicketId(ticketEntity.getTicketId());
         dto.setTicketCode(ticketEntity.getTicketCode());
-        dto.setFlightId(ticketEntity.getFlightId());
-        dto.setFlightDepartureTime(ticketEntity.getFlightDepartureTime());
         dto.setSeatId(ticketEntity.getSeat().getSeatId());
         dto.setStatus(ticketEntity.getStatus());
         dto.setCreatedAt(ticketEntity.getCreatedAt());
@@ -49,8 +46,6 @@ public class TicketQueryRepository {
         TicketDTO dto = new TicketDTO();
         dto.setTicketId(ticketEntity.getTicketId());
         dto.setTicketCode(ticketEntity.getTicketCode());
-        dto.setFlightId(ticketEntity.getFlightId());
-        dto.setFlightDepartureTime(ticketEntity.getFlightDepartureTime());
         dto.setSeatId(ticketEntity.getSeat().getSeatId());
         dto.setStatus(ticketEntity.getStatus());
         dto.setCreatedAt(ticketEntity.getCreatedAt());

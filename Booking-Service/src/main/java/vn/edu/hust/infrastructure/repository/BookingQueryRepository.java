@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import vn.edu.hust.application.dto.query.BookingDTO;
 import vn.edu.hust.application.dto.query.TicketReservationDTO;
-import vn.edu.hust.application.service.FlightService;
+import vn.edu.hust.application.service.FlightClientService;
 import vn.edu.hust.domain.model.valueobj.FlightId;
 import vn.edu.hust.infrastructure.entity.BookingEntity;
 import vn.edu.hust.infrastructure.entity.TicketEntity;
@@ -22,7 +22,7 @@ public class BookingQueryRepository {
     private TicketJpaRepository ticketRepository;
 
     @Autowired
-    private FlightService flightService;
+    private FlightClientService flightService;
 
     public BookingDTO findByBookingId(String bookingId) {
         BookingEntity bookingEntity = bookingRepository.findById(bookingId).orElse(null);
@@ -41,24 +41,15 @@ public class BookingQueryRepository {
         dto.setCurrency(bookingEntity.getCurrency());
         dto.setSeatCount(bookingEntity.getSeatCount());
         dto.setTicketCount(bookingEntity.getTicketCount());
-
-        // Load tickets for this booking
         List<TicketEntity> tickets = ticketRepository.findByBookingId(bookingId);
         List<TicketReservationDTO> ticketReservations = tickets.stream()
                 .map(this::convertToTicketReservationDTO)
                 .collect(Collectors.toList());
         dto.setTickets(ticketReservations);
-
-        // Load flight details if available
         if (bookingEntity.getFlightId() != null) {
-            try {
-                var flightDetails = flightService.getFlightDetails(new FlightId(bookingEntity.getFlightId()));
-                dto.setFlightDetails(flightDetails);
-            } catch (Exception e) {
-                // Log error but don't fail the query
-            }
+            var flightDetails = flightService.getFlightDetails(bookingEntity.getFlightId());
+            dto.setFlightDetails(flightDetails);
         }
-
         return dto;
     }
 
@@ -78,8 +69,6 @@ public class BookingQueryRepository {
                     dto.setCurrency(bookingEntity.getCurrency());
                     dto.setSeatCount(bookingEntity.getSeatCount());
                     dto.setTicketCount(bookingEntity.getTicketCount());
-
-                    // Load tickets for this booking
                     List<TicketEntity> tickets = ticketRepository.findByBookingId(bookingEntity.getBookingId());
                     List<TicketReservationDTO> ticketReservations = tickets.stream()
                             .map(this::convertToTicketReservationDTO)
@@ -95,7 +84,6 @@ public class BookingQueryRepository {
         TicketReservationDTO dto = new TicketReservationDTO();
         dto.setTicketId(ticket.getTicketId());
         dto.setSeatId(ticket.getSeatId());
-
         if (ticket.getSeat() != null) {
             dto.setSeatCode(ticket.getSeat().getSeatCode());
             if (ticket.getSeat().getSeatClass() != null) {

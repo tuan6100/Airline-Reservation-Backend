@@ -10,20 +10,19 @@ import vn.edu.hust.integration.event.PaymentFailedEvent;
 @Component
 public class PaymentServiceEventListener {
 
-    @Autowired private BookingApplicationService bookingService;
+    @Autowired
+    private BookingApplicationService bookingService;
 
-
-    public PaymentServiceEventListener(BookingApplicationService bookingService) {
-        this.bookingService = bookingService;
-    }
-
-    @KafkaListener(topics = "payment-events.completed", groupId = "booking-service")
-    public void handlePaymentCompleted(PaymentCompletedEvent event) {
-
+    @KafkaListener(topics = "order-events.confirmed", groupId = "booking-service")
+    public void handleOrderConfirmed(PaymentCompletedEvent event) {
+        bookingService.confirmBooking(event.bookingId());
     }
 
     @KafkaListener(topics = "payment-events.failed", groupId = "booking-service")
     public void handlePaymentFailed(PaymentFailedEvent event) {
-
+        bookingService.cancelBooking(
+                event.bookingId(),
+                event.errorMessage() != null ? event.errorMessage() : "PAYMENT_FAILED"
+        );
     }
 }

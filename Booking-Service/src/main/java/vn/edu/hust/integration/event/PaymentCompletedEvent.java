@@ -1,3 +1,3 @@
 package vn.edu.hust.integration.event;
 
-public record PaymentCompletedEvent(String paymentId, String orderId) {}
+public record PaymentCompletedEvent(String paymentId, String orderId, String bookingId) {}

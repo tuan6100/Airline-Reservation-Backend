@@ -5,13 +5,20 @@ import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import vn.edu.hust.application.dto.command.*;
 import vn.edu.hust.application.dto.query.TicketDTO;
 import vn.edu.hust.application.dto.query.*;
+import vn.edu.hust.infrastructure.entity.TicketEntity;
+import vn.edu.hust.infrastructure.repository.TicketJpaRepository;
+import vn.edu.hust.infrastructure.event.KafkaEventPublisher;
+import vn.edu.hust.domain.event.TicketBookedEvent;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 public class TicketApplicationService {
@@ -22,20 +29,65 @@ public class TicketApplicationService {
     @Autowired
     private QueryGateway queryGateway;
 
+    @Autowired
+    private TicketJpaRepository ticketRepository;
 
-    public CompletableFuture<Void> holdTicket(Long ticketId, Long customerId, Integer holdDurationMinutes) {
+    @Autowired
+    private KafkaEventPublisher kafkaEventPublisher;
+
+    public CompletableFuture<List<TicketDTO>> getTicketsBySeatAndFlight(
+            Long seatId, Long flightId, LocalDateTime flightDepartureTime) {
+        return CompletableFuture.supplyAsync(() -> ticketRepository.findTicketsBySeatAndFlightAndTime(
+                seatId, flightId, flightDepartureTime)
+                .stream()
+                .map(ticket -> {
+                    TicketDTO dto = new TicketDTO();
+                    dto.setTicketId(ticket.getTicketId());
+                    dto.setTicketCode(ticket.getTicketCode());
+                    dto.setSeatId(ticket.getSeatId());
+                    dto.setStatus(ticket.getStatus());
+                    dto.setCreatedAt(ticket.getCreatedAt());
+                    dto.setBookingId(ticket.getBookingId());
+                    return dto;
+                })
+                .collect(Collectors.toList()));
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED, timeout = 30)
+    public CompletableFuture<String> bookTicket(BookTicketCommand command) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                boolean canBook = ticketRepository.canBookTicketAtomic(
+                        command.getTicketId(),
+                        command.getCustomerId(),
+                        command.getBookingId()
+                );
+                if (!canBook) {
+                    throw new IllegalStateException("Ticket is not available for booking");
+                }
+                commandGateway.sendAndWait(command);
+                TicketEntity ticketEntity = ticketRepository.findByIdWithLock(command.getTicketId());
+                TicketBookedEvent event = new TicketBookedEvent(
+                        command.getTicketId(),
+                        ticketEntity.getFlightId(),
+                        ticketEntity.getSeat().getSeatId(),
+                        command.getCustomerId(),
+                        command.getBookingId(),
+                        LocalDateTime.now()
+                );
+
+                kafkaEventPublisher.handleTicketBookedEvent(event);
+                return "Ticket booked successfully";
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to book ticket: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    public CompletableFuture<Void> holdTicket(Long ticketId, Long customerId) {
         HoldTicketCommand command = new HoldTicketCommand();
         command.setTicketId(ticketId);
         command.setCustomerId(customerId);
-        command.setHoldDurationMinutes(holdDurationMinutes);
-        return commandGateway.send(command);
-    }
-
-    public CompletableFuture<Void> bookTicket(Long ticketId, Long customerId, String bookingId) {
-        BookTicketCommand command = new BookTicketCommand();
-        command.setTicketId(ticketId);
-        command.setCustomerId(customerId);
-        command.setBookingId(bookingId);
         return commandGateway.send(command);
     }
 

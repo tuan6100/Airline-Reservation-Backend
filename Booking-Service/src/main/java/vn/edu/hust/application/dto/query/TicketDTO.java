@@ -8,15 +8,13 @@ import java.util.UUID;
 
 @Data
 public class TicketDTO {
-    private Long ticketId;
-    private UUID ticketCode;
-    private Long flightId;
-    private LocalDateTime flightDepartureTime;
+    protected Long ticketId;
+    protected UUID ticketCode;
     private TicketStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime holdUntil;
     private Long heldByCustomerId;
     private String bookingId;
     private Long seatId;
-    private FlightDetailsDTO flightDetails;
+    protected FlightDetailsDTO flightDetails;
 }
