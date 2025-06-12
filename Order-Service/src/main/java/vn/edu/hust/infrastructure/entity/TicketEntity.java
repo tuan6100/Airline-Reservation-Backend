@@ -6,16 +6,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "\"Ticket\"")
+@Table(name = "\"tickets\"")
 public class TicketEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

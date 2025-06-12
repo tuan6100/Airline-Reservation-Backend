@@ -19,14 +19,14 @@ public class OrderController {
     @Autowired
     private OrderApplicationService orderApplicationService;
 
-    @PostMapping
+    @PostMapping("/v1/create")
     public CompletableFuture<ResponseEntity<Long>> createOrder(@RequestBody CreateOrderCommand command) {
         return orderApplicationService.createOrder(command)
                 .thenApply(orderId -> new ResponseEntity<>(orderId, HttpStatus.CREATED))
                 .exceptionally(_ -> new ResponseEntity<>(null, HttpStatus.BAD_REQUEST));
     }
 
-    @GetMapping("/{orderId}")
+    @GetMapping("/v1/{orderId}")
     public CompletableFuture<ResponseEntity<OrderDTO>> getOrder(@PathVariable Long orderId) {
         return orderApplicationService.getOrder(orderId)
                 .thenApply(order -> order != null ?
@@ -34,7 +34,7 @@ public class OrderController {
                         ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/{orderId}/confirm")
+    @PostMapping("/v1/{orderId}/confirm")
     public CompletableFuture<ResponseEntity<Object>> confirmOrder(@PathVariable Long orderId) {
         return orderApplicationService.confirmOrder(orderId)
                 .thenApply(_ -> ResponseEntity.ok().build())
@@ -42,7 +42,7 @@ public class OrderController {
     }
 
 
-    @PostMapping("/{orderId}/confirm-and-pay")
+    @PostMapping("/v1/{orderId}/confirm-and-pay")
     public CompletableFuture<ResponseEntity<String>> confirmOrderAndInitiatePayment(@PathVariable Long orderId) {
         return orderApplicationService.confirmOrderAndInitiatePayment(orderId)
                 .thenApply(_ -> ResponseEntity.ok("Order confirmed and payment initiated"))
@@ -51,7 +51,7 @@ public class OrderController {
                                 throwable.getMessage()));
     }
 
-    @PostMapping("/{orderId}/mark-paid")
+    @PostMapping("/v1/{orderId}/mark-paid")
     public CompletableFuture<ResponseEntity<Object>> markOrderAsPaid(
             @PathVariable Long orderId,
             @RequestParam Long paymentId) {
@@ -60,13 +60,13 @@ public class OrderController {
                 .exceptionally(_ -> ResponseEntity.badRequest().build());
     }
 
-    @GetMapping("/customer/{customerId}")
+    @GetMapping("/v1/customer/{customerId}")
     public CompletableFuture<ResponseEntity<List<OrderSummaryDTO>>> getOrdersByCustomer(@PathVariable Long customerId) {
         return orderApplicationService.getOrdersByCustomer(customerId)
                 .thenApply(ResponseEntity::ok);
     }
 
-    @GetMapping("/booking/{bookingId}")
+    @GetMapping("/v1/booking/{bookingId}")
     public CompletableFuture<ResponseEntity<OrderDTO>> getOrderForBooking(@PathVariable String bookingId) {
         return orderApplicationService.getOrderByBooking(bookingId)
                 .thenApply(order -> order != null ?

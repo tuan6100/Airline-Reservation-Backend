@@ -3,7 +3,8 @@ package vn.edu.hust.domain.model.enumeration;
 public enum PaymentStatus {
     NOT_PAID,
     PENDING,
-    COMPLETED,
+    PARTIAL_PAYMENT,
+    COMPLETED_PAYMENT,
     FAILED,
     REFUNDED
 }

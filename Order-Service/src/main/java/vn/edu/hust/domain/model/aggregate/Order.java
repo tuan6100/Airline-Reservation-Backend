@@ -8,6 +8,7 @@ import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.modelling.command.AggregateLifecycle;
 import org.axonframework.spring.stereotype.Aggregate;
 import vn.edu.hust.application.dto.command.*;
+import vn.edu.hust.application.enumeration.CurrencyUnit;
 import vn.edu.hust.domain.event.*;
 import vn.edu.hust.domain.model.enumeration.OrderStatus;
 import vn.edu.hust.domain.model.enumeration.PaymentStatus;
@@ -40,27 +41,17 @@ public class Order {
     @CommandHandler
     public Order(CreateOrderCommand command) {
         AggregateLifecycle.apply(new OrderCreatedEvent(
-                command.getOrderId(),
                 command.getCustomerId(),
                 command.getBookingId(),
-                command.getPromotionId(),
                 OrderStatus.PENDING,
                 BigDecimal.ZERO,
-                "VND",
+                CurrencyUnit.getCurrencyUnitByNation(command.getNation()),
                 LocalDateTime.now()
         ));
-        if (command.getItems() != null) {
-            command.getItems().forEach(item -> {
-                AggregateLifecycle.apply(new OrderItemAddedEvent(
-                        command.getOrderId(),
-                        item.getTicketId(),
-                        item.getFlightId(),
-                        item.getSeatId(),
-                        BigDecimal.valueOf(item.getPrice()),
-                        item.getCurrency(),
-                        item.getDescription()
-                ));
-            });
+        if (command.getItem() != null) {
+            AggregateLifecycle.apply(new OrderItemAddedEvent(
+                command.getBookingId(), command.getItem()
+            ));
         }
     }
 
@@ -74,7 +65,6 @@ public class Order {
         if (itemExists) {
             throw new IllegalArgumentException("Order already contains item with ticket ID: " + command.getTicketId());
         }
-
         AggregateLifecycle.apply(new OrderItemAddedEvent(
                 orderId,
                 command.getTicketId(),
@@ -123,7 +113,6 @@ public class Order {
         if (status != OrderStatus.PAYMENT_PENDING && status != OrderStatus.CONFIRMED) {
             throw new IllegalStateException("Order must be confirmed or payment pending to mark as paid");
         }
-
         AggregateLifecycle.apply(new OrderPaidEvent(
                 orderId,
                 command.getPaymentId(),
@@ -203,7 +192,7 @@ public class Order {
     @EventSourcingHandler
     public void on(OrderPaidEvent event) {
         this.status = OrderStatus.PAID;
-        this.paymentStatus = PaymentStatus.COMPLETED;
+        this.paymentStatus = PaymentStatus.COMPLETED_PAYMENT;
         this.updatedAt = event.paidAt();
     }
 

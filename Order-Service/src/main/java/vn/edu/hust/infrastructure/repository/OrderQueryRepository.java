@@ -5,7 +5,6 @@ import org.springframework.stereotype.Repository;
 import vn.edu.hust.application.dto.query.OrderDTO;
 import vn.edu.hust.application.dto.query.OrderSummaryDTO;
 import vn.edu.hust.application.dto.query.OrderItemDTO;
-import vn.edu.hust.infrastructure.entity.OrderEntity;
 import vn.edu.hust.infrastructure.entity.OrderItemEntity;
 
 import java.util.List;

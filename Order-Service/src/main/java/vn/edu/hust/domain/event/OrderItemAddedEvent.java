@@ -1,13 +1,8 @@
 package vn.edu.hust.domain.event;
 
-import java.math.BigDecimal;
+import vn.edu.hust.application.dto.query.TicketBookedDTO;
 
 public record OrderItemAddedEvent(
-        Long orderId,
-        Long ticketId,
-        Long flightId,
-        Long seatId,
-        BigDecimal price,
-        String currency,
-        String description
+        String bookingId,
+        TicketBookedDTO item
 ) {}

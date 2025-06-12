@@ -32,12 +32,14 @@ spring:
       enable-auto-commit: true
       properties:
         spring.json.trusted.packages: "*"
+    listener:
+      concurrency: 3
 
 
 services:
   flight:
-    url: http://flight-service
+    url: http://localhost:8004
   booking:
-    url: http://booking-service
+    url: http://localhost:8001
   payment:
-    url: http://payment-service
+    url: http://localhost:8003

@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-/**
- * Standard error response cho Order Service
- */
 @Data
 @Builder
 @NoArgsConstructor

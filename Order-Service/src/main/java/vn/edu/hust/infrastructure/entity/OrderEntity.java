@@ -3,16 +3,15 @@ package vn.edu.hust.infrastructure.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import vn.edu.hust.domain.model.enumeration.OrderStatus;
 import vn.edu.hust.domain.model.enumeration.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
-@Table(name = "\"TicketOrder\"")
+@Table(name = "orders")
 @Getter
 @Setter
 public class OrderEntity {
@@ -21,20 +20,21 @@ public class OrderEntity {
     @Column(name = "order_id")
     private Long orderId;
 
+    @Column(name = "booking_id", unique = true)
+    private String bookingId;
+
     @Column(name = "customer_id")
     private Long customerId;
 
     @Column(name = "promotion_id")
     private Long promotionId;
 
-    @Column(name = "booking_id")
-    private String bookingId;
-
     @Column(name = "status")
     private String status;
 
     @Column(name = "payment_status")
-    private String paymentStatus;
+    @Enumerated(EnumType.ORDINAL)
+    private PaymentStatus paymentStatus;
 
     @Column(name = "total_amount")
     private BigDecimal totalAmount;
@@ -48,12 +48,11 @@ public class OrderEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @OneToMany(mappedBy = "order_id", fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
+    private Set<OrderItemEntity> orderItemEntities = new HashSet<>();
+
     @Version
     @Column(name = "version")
     private Integer version = 0;
 
-
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id")
-    private List<BookedTicketEntity> bookedTickets = new ArrayList<>();
 }

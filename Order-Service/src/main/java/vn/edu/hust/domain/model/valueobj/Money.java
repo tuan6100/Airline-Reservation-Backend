@@ -10,7 +10,6 @@ import java.util.Objects;
 
 @Getter
 public class Money {
-    // Getter methods
     private final BigDecimal amount;
     private final Currency currency;
 

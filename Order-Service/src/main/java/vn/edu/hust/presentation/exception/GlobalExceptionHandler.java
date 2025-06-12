@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.CONFLICT.value())
                 .error("Optimistic Locking Failure")
-                .message("Dữ liệu đã bị thay đổi bởi người dùng khác. Vui lòng thử lại.")
+                .message("The data has been changed by another user. Please try again.")
                 .path("/api/orders")
                 .build();
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
@@ -75,7 +75,6 @@ public class GlobalExceptionHandler {
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-
         ValidationErrorResponse errorResponse = ValidationErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
@@ -94,7 +93,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error("Internal Server Error")
-                .message("Đã xảy ra lỗi không mong muốn: " + ex.getMessage())
+                .message("An error occurred " + ex.getMessage())
                 .path("/api/orders")
                 .build();
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -106,7 +105,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error("Internal Server Error")
-                .message("Đã xảy ra lỗi hệ thống")
+                .message("An error occurred"+ ex.getMessage())
                 .path("/api/orders")
                 .build();
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
