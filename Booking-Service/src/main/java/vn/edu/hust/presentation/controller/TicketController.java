@@ -47,13 +47,13 @@ public class TicketController {
                 .thenApply(ticket -> ticket != null ? ResponseEntity.ok(ticket) : ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/v2/{ticketId}/book")
+    @PostMapping("/v2/book")
     public CompletableFuture<ResponseEntity<String>> bookTicket(
-            @PathVariable Long ticketId,
+            @RequestBody List<Long> ticketIds,
             @RequestParam Long customerId,
             @RequestParam String bookingId) {
         BookTicketCommand command = new BookTicketCommand();
-        command.setTicketId(ticketId);
+        command.setTicketIds(ticketIds);
         command.setCustomerId(customerId);
         command.setBookingId(bookingId);
         return ticketApplicationService.bookTicket(command)

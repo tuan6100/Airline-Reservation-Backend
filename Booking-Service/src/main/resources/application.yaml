@@ -15,12 +15,15 @@ spring:
     username: ${POSTGRESQL_USERNAME:}
     password: ${POSTGRESQL_PASSWORD:}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 300
   jpa:
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
 
   kafka:
     bootstrap-servers: localhost:9092

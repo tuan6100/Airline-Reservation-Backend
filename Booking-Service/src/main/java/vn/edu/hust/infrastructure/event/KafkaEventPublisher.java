@@ -6,6 +6,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import vn.edu.hust.application.dto.query.TicketBookedDTO;
 import vn.edu.hust.domain.event.*;
@@ -22,7 +23,7 @@ public class KafkaEventPublisher {
     @Autowired
     private TicketMapper ticketMapper;
 
-    @EventListener
+    @Async
     public void handleTicketBookedEvent(TicketBookedEvent event) {
         try {
             TicketBookedDTO ticketBookedDTO = ticketMapper.fromEventToDTO(event);

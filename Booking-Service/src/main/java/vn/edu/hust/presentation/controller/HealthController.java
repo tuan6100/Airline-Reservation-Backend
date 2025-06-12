@@ -43,6 +43,11 @@ public class HealthController {
         }
     }
 
+    @GetMapping("/v1/thread")
+    public String getThreadName() {
+        return Thread.currentThread().toString();
+    }
+
     public record HealthStatus(String status, String message, BookingExpirationService.CleanupStatistics statistics) {
     }
 }

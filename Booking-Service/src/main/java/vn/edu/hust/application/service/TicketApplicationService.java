@@ -39,7 +39,7 @@ public class TicketApplicationService {
     public CompletableFuture<List<TicketDTO>> getTicketsBySeatAndFlight(
             List<SeatAndFlightDTO> seatAndFlightDTOList
     ) {
-        return CompletableFuture.supplyAsync(() -> seatAndFlightDTOList.stream()
+        return CompletableFuture.supplyAsync(() -> seatAndFlightDTOList.stream().parallel()
                 .map(seatAndFlightDTO -> {
                     TicketEntity ticket = ticketRepository.findTicketsBySeatAndFlightAndTime(
                             seatAndFlightDTO.getSeatId(),
@@ -66,26 +66,27 @@ public class TicketApplicationService {
     public CompletableFuture<String> bookTicket(BookTicketCommand command) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                boolean canBook = ticketRepository.canBookTicketAtomic(
-                        command.getTicketId(),
-                        command.getCustomerId(),
-                        command.getBookingId()
-                );
-                if (!canBook) {
-                    throw new IllegalStateException("Ticket is not available for booking");
-                }
-                commandGateway.sendAndWait(command);
-                TicketEntity ticketEntity = ticketRepository.findByIdWithLock(command.getTicketId());
-                TicketBookedEvent event = new TicketBookedEvent(
-                        command.getTicketId(),
-                        ticketEntity.getFlightId(),
-                        ticketEntity.getSeat().getSeatId(),
-                        command.getCustomerId(),
-                        command.getBookingId(),
-                        LocalDateTime.now()
-                );
-
-                kafkaEventPublisher.handleTicketBookedEvent(event);
+                command.getTicketIds().stream().parallel().forEach(ticketId -> {
+                    boolean canBook = ticketRepository.canBookTicketAtomic(
+                            ticketId,
+                            command.getCustomerId(),
+                            command.getBookingId()
+                    );
+                    if (!canBook) {
+                        throw new IllegalStateException("Ticket is not available for booking");
+                    }
+                    commandGateway.sendAndWait(command);
+                    TicketEntity ticketEntity = ticketRepository.findByIdWithLock(ticketId);
+                    TicketBookedEvent event = new TicketBookedEvent(
+                            ticketId,
+                            ticketEntity.getFlightId(),
+                            ticketEntity.getSeat().getSeatId(),
+                            command.getCustomerId(),
+                            command.getBookingId(),
+                            LocalDateTime.now()
+                    );
+                    kafkaEventPublisher.handleTicketBookedEvent(event);
+                });
                 return "Ticket booked successfully";
             } catch (Exception e) {
                 throw new RuntimeException("Failed to book ticket: " + e.getMessage(), e);
