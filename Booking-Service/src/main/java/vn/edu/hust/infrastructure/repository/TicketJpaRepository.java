@@ -24,7 +24,7 @@ public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
             "AND t.flightId = :flightId " +
             "AND t.flightDepartureTime = :flightDepartureTime " +
             "ORDER BY t.createdAt")
-    List<TicketEntity> findTicketsBySeatAndFlightAndTime(
+    TicketEntity findTicketsBySeatAndFlightAndTime(
             @Param("seatId") Long seatId,
             @Param("flightId") Long flightId,
             @Param("flightDepartureTime") LocalDateTime flightDepartureTime
@@ -113,7 +113,7 @@ public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
 
     @Modifying
     @Query(value = """
-        UPDATE ticket SET
+        UPDATE tickets SET
             status = 2,
             booking_id = :bookingId,
             updated_at = :updateTime,

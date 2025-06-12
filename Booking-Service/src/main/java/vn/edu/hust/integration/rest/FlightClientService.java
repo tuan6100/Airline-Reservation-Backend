@@ -1,4 +1,4 @@
-package vn.edu.hust.application.service;
+package vn.edu.hust.integration.rest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

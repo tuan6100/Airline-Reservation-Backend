@@ -3,11 +3,13 @@ package vn.edu.hust.presentation.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.edu.hust.application.dto.query.SeatAndFlightDTO;
 import vn.edu.hust.application.dto.query.TicketDTO;
 import vn.edu.hust.application.service.TicketApplicationService;
 import vn.edu.hust.application.dto.command.BookTicketCommand;
+import vn.edu.hust.presentation.payload.SeatAndFlightRequest;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -19,12 +21,17 @@ public class TicketController {
     private TicketApplicationService ticketApplicationService;
 
     @GetMapping("/v2/search")
-    public CompletableFuture<ResponseEntity<?>> getTicketsBySeatAndFlight(
-            @RequestParam Long seatId,
-            @RequestParam Long flightId,
-            @RequestParam String flightDepartureTime) {
-        LocalDateTime departureTime = LocalDateTime.parse(flightDepartureTime);
-        return ticketApplicationService.getTicketsBySeatAndFlight(seatId, flightId, departureTime)
+    public CompletableFuture<ResponseEntity<?>> getTicketsBySingleSeatAndSingleFlight(
+            @RequestBody List<SeatAndFlightRequest> requests
+    ) {
+        List<SeatAndFlightDTO> seatAndFlightDTOList = new ArrayList<>();
+        requests.forEach(request -> request.seatIds().forEach(seatId -> {
+            SeatAndFlightDTO seatAndFlightDTO = new SeatAndFlightDTO(
+                    seatId, request.flightId(), request.flightDepartureTime()
+            );
+            seatAndFlightDTOList.add(seatAndFlightDTO);
+        }));
+        return ticketApplicationService.getTicketsBySeatAndFlight(seatAndFlightDTOList)
                 .thenApply(tickets -> {
                     if (tickets.isEmpty()) {
                         return ResponseEntity.notFound().build();

@@ -17,6 +17,7 @@ import vn.edu.hust.domain.event.TicketBookedEvent;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -36,20 +37,28 @@ public class TicketApplicationService {
     private KafkaEventPublisher kafkaEventPublisher;
 
     public CompletableFuture<List<TicketDTO>> getTicketsBySeatAndFlight(
-            Long seatId, Long flightId, LocalDateTime flightDepartureTime) {
-        return CompletableFuture.supplyAsync(() -> ticketRepository.findTicketsBySeatAndFlightAndTime(
-                seatId, flightId, flightDepartureTime)
-                .stream()
-                .map(ticket -> {
+            List<SeatAndFlightDTO> seatAndFlightDTOList
+    ) {
+        return CompletableFuture.supplyAsync(() -> seatAndFlightDTOList.stream()
+                .map(seatAndFlightDTO -> {
+                    TicketEntity ticket = ticketRepository.findTicketsBySeatAndFlightAndTime(
+                            seatAndFlightDTO.getSeatId(),
+                            seatAndFlightDTO.getFlightId(),
+                            seatAndFlightDTO.getFlightDepartureTime()
+                    );
+                    if (ticket == null) {
+                        return null;
+                    }
                     TicketDTO dto = new TicketDTO();
                     dto.setTicketId(ticket.getTicketId());
                     dto.setTicketCode(ticket.getTicketCode());
-                    dto.setSeatId(ticket.getSeatId());
+                    dto.setSeatId(ticket.getSeat().getSeatId());
                     dto.setStatus(ticket.getStatus());
                     dto.setCreatedAt(ticket.getCreatedAt());
                     dto.setBookingId(ticket.getBookingId());
                     return dto;
                 })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList()));
     }
 

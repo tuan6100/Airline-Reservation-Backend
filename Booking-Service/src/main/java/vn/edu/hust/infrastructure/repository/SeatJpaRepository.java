@@ -29,7 +29,7 @@ public interface SeatJpaRepository extends JpaRepository<SeatEntity, Long> {
 
     @Modifying
     @Query(value = """
-        UPDATE seat SET
+        UPDATE seats SET
             status = 'ON_HOLD',
             updated_at = :updateTime,
             version = version + 1
@@ -48,7 +48,7 @@ public interface SeatJpaRepository extends JpaRepository<SeatEntity, Long> {
 
     @Modifying
     @Query(value = """
-        UPDATE seat SET
+        UPDATE seats SET
             status = 'AVAILABLE',
             updated_at = :updateTime,
             version = version + 1
@@ -62,7 +62,7 @@ public interface SeatJpaRepository extends JpaRepository<SeatEntity, Long> {
 
     @Modifying
     @Query(value = """
-        UPDATE seat SET
+        UPDATE seats SET
             status = 'AVAILABLE',
             updated_at = :updateTime,
             version = version + 1

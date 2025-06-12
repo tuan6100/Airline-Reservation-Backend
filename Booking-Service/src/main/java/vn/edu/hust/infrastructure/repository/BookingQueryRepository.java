@@ -4,8 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import vn.edu.hust.application.dto.query.BookingDTO;
 import vn.edu.hust.application.dto.query.TicketReservationDTO;
-import vn.edu.hust.application.service.FlightClientService;
-import vn.edu.hust.domain.model.valueobj.FlightId;
+import vn.edu.hust.integration.rest.FlightClientService;
 import vn.edu.hust.infrastructure.entity.BookingEntity;
 import vn.edu.hust.infrastructure.entity.TicketEntity;
 
