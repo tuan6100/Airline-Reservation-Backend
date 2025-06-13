@@ -7,16 +7,11 @@ import org.springframework.kafka.retrytopic.DltStrategy;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Component;
-import vn.edu.hust.application.dto.command.AddOrderItemCommand;
 import vn.edu.hust.application.dto.command.CreateOrderCommand;
-import vn.edu.hust.application.service.FlightClientService;
+import vn.edu.hust.intergration.restful.FlightClientService;
 import vn.edu.hust.application.service.OrderApplicationService;
 import vn.edu.hust.domain.event.BookingCancelledEvent;
-import vn.edu.hust.infrastructure.entity.OrderEntity;
-import vn.edu.hust.infrastructure.repository.OrderJpaRepository;
 import vn.edu.hust.intergration.event.OrderCreationRequestEvent;
-
-import java.util.Optional;
 
 @Component
 public class BookingServiceEventListener {

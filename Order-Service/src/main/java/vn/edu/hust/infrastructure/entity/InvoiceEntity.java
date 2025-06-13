@@ -5,9 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
-@Table(name = "\"invoices\"")
+@Table(name = "invoices")
 @Getter
 @Setter
 public class InvoiceEntity {
@@ -28,4 +29,7 @@ public class InvoiceEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", insertable = false, updatable = false)
     private OrderEntity order;
+
+    @OneToMany(mappedBy = "invoice_id")
+    private Set<PaymentEntity> paymentEntities;
 }

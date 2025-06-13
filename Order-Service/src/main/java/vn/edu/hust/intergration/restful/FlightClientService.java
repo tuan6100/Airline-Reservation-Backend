@@ -1,11 +1,10 @@
-package vn.edu.hust.application.service;
+package vn.edu.hust.intergration.restful;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import vn.edu.hust.application.dto.query.FlightDetailsDTO;
 import vn.edu.hust.domain.exception.ServiceIntegrationException;
 
 @Service

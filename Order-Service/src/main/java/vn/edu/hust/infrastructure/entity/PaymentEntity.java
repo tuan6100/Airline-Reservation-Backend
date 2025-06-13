@@ -7,7 +7,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "\"payments\"")
+@Table(name = "payments")
 @Getter
 @Setter
 public class PaymentEntity {
@@ -15,9 +15,6 @@ public class PaymentEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "payment_id")
     private Long paymentId;
-
-    @Column(name = "invoice_id", nullable = false)
-    private Long invoiceId;
 
     @Column(name = "amount", nullable = false)
     private Long amount;
@@ -28,6 +25,7 @@ public class PaymentEntity {
     @Column(name = "payment_method", nullable = false)
     private String paymentMethod;
 
-    @ManyToOne(fetch = FetchType.LAZY, targetEntity = InvoiceEntity.class)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoice_id")
     private InvoiceEntity invoice;
 }

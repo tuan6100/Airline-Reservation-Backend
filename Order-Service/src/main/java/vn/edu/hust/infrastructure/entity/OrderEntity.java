@@ -3,9 +3,9 @@ package vn.edu.hust.infrastructure.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import vn.edu.hust.domain.model.enumeration.OrderStatus;
 import vn.edu.hust.domain.model.enumeration.PaymentStatus;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -26,18 +26,20 @@ public class OrderEntity {
     @Column(name = "customer_id")
     private Long customerId;
 
-    @Column(name = "promotion_id")
-    private Long promotionId;
+    @ManyToOne
+    @JoinColumn(name = "promotion_id")
+    private PromotionEntity promotion;
 
     @Column(name = "status")
-    private String status;
+    @Enumerated(EnumType.ORDINAL)
+    private OrderStatus orderStatus;
 
     @Column(name = "payment_status")
     @Enumerated(EnumType.ORDINAL)
     private PaymentStatus paymentStatus;
 
-    @Column(name = "total_amount")
-    private BigDecimal totalAmount;
+    @Column(name = "total_price")
+    private Long totalPrice = 0L;
 
     @Column(name = "currency")
     private String currency;

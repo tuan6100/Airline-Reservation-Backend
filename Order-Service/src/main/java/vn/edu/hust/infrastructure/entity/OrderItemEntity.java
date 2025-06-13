@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+import java.util.Locale;
+
 @Entity
 @Table(name = "order_items")
 @Getter
@@ -11,10 +14,12 @@ import lombok.Setter;
 public class OrderItemEntity {
 
     @Id
-    @OneToOne(targetEntity = TicketEntity.class)
-    private TicketEntity ticketEntity;
+    private Long ticketId;
 
-    @ManyToOne(targetEntity = OrderEntity.class)
+    @ManyToOne()
     @JoinColumn(name = "order_id")
     private OrderEntity orderEntity;
+
+    @Column(name = "added_at")
+    private LocalDateTime added_at;
 }

@@ -7,6 +7,7 @@ import java.util.UUID;
 
 @Data
 public class TicketBookedDTO {
+    private Long ticketId;
     private UUID ticketCode;
     private String seatCode;
     private Long price;

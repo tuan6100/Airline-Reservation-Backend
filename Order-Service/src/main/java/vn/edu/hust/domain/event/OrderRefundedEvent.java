@@ -1,11 +1,12 @@
 package vn.edu.hust.domain.event;
 
-import java.math.BigDecimal;
+import vn.edu.hust.application.enumeration.CurrencyUnit;
+
 import java.time.LocalDateTime;
 
 public record OrderRefundedEvent(
         Long orderId,
-        BigDecimal refundAmount,
-        String currency,
+        Long refundAmount,
+        CurrencyUnit currency,
         LocalDateTime refundedAt
 ) {}

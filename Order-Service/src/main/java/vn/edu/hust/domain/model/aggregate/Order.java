@@ -2,27 +2,30 @@ package vn.edu.hust.domain.model.aggregate;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.modelling.command.AggregateLifecycle;
 import org.axonframework.spring.stereotype.Aggregate;
 import vn.edu.hust.application.dto.command.*;
+import vn.edu.hust.application.dto.query.TicketBookedDTO;
 import vn.edu.hust.application.enumeration.CurrencyUnit;
 import vn.edu.hust.domain.event.*;
+import vn.edu.hust.domain.model.enumeration.DiscountType;
 import vn.edu.hust.domain.model.enumeration.OrderStatus;
 import vn.edu.hust.domain.model.enumeration.PaymentStatus;
 import vn.edu.hust.domain.model.valueobj.OrderItem;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @Aggregate
 @Getter
+@Setter
 @NoArgsConstructor
 public class Order {
     @AggregateIdentifier
@@ -33,18 +36,26 @@ public class Order {
     private List<OrderItem> orderItems = new ArrayList<>();
     private OrderStatus status;
     private PaymentStatus paymentStatus;
-    private BigDecimal totalAmount;
-    private String currency;
+    private Long totalPrice;
+    private CurrencyUnit currency;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    private final AtomicBoolean isFullyInitialized = new AtomicBoolean(false);
+
     @CommandHandler
     public Order(CreateOrderCommand command) {
+        if (command.getCustomerId() == null) {
+            throw new IllegalArgumentException("Customer ID cannot be null");
+        }
+        if (command.getBookingId() == null || command.getBookingId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Booking ID cannot be null or empty");
+        }
         AggregateLifecycle.apply(new OrderCreatedEvent(
                 command.getCustomerId(),
                 command.getBookingId(),
                 OrderStatus.PENDING,
-                BigDecimal.ZERO,
+                0L,
                 CurrencyUnit.getCurrencyUnitByNation(command.getNation()),
                 LocalDateTime.now()
         ));
@@ -57,23 +68,21 @@ public class Order {
 
     @CommandHandler
     public void handle(AddOrderItemCommand command) {
+        if (!isFullyInitialized.get()) {
+            throw new IllegalStateException("Order is not fully initialized yet. Please wait.");
+        }
         if (status != OrderStatus.PENDING) {
             throw new IllegalStateException("Cannot add items to non-pending order");
         }
-        boolean itemExists = orderItems.stream()
-                .anyMatch(item -> item.ticketId().equals(command.getTicketId()));
-        if (itemExists) {
-            throw new IllegalArgumentException("Order already contains item with ticket ID: " + command.getTicketId());
+        if (command.getItems() == null || command.getItems().isEmpty()) {
+            throw new IllegalArgumentException("No items provided to add to order");
         }
-        AggregateLifecycle.apply(new OrderItemAddedEvent(
-                orderId,
-                command.getTicketId(),
-                command.getFlightId(),
-                command.getSeatId(),
-                BigDecimal.valueOf(command.getPrice()),
-                command.getCurrency(),
-                command.getDescription()
-        ));
+        for (TicketBookedDTO item : command.getItems()) {
+            AggregateLifecycle.apply(new OrderItemAddedEvent(
+                    this.bookingId,
+                    item
+            ));
+        }
     }
 
     @CommandHandler
@@ -87,8 +96,22 @@ public class Order {
         AggregateLifecycle.apply(new OrderConfirmedEvent(
                 orderId,
                 bookingId,
-                totalAmount,
+                totalPrice,
                 currency
+        ));
+    }
+
+    @CommandHandler
+    public void handle(ApplyPromotionToOrderCommand command) {
+        if (status != OrderStatus.PENDING) {
+            throw new IllegalStateException("Order must be in PENDING state to be confirmed");
+        }
+        if (orderItems.isEmpty()) {
+            throw new IllegalStateException("Cannot confirm an empty order");
+        }
+        AggregateLifecycle.apply(new PromotionAppliedEvent(
+                orderId,
+                command.getPromotion()
         ));
     }
 
@@ -116,7 +139,7 @@ public class Order {
         AggregateLifecycle.apply(new OrderPaidEvent(
                 orderId,
                 command.getPaymentId(),
-                totalAmount,
+                totalPrice,
                 currency,
                 LocalDateTime.now()
         ));
@@ -127,10 +150,9 @@ public class Order {
         if (status != OrderStatus.PAID) {
             throw new IllegalStateException("Only paid orders can be refunded");
         }
-
         AggregateLifecycle.apply(new OrderRefundedEvent(
                 orderId,
-                totalAmount,
+                totalPrice,
                 currency,
                 LocalDateTime.now()
         ));
@@ -150,27 +172,22 @@ public class Order {
 
     @EventSourcingHandler
     public void on(OrderCreatedEvent event) {
-        this.orderId = event.orderId();
         this.customerId = event.customerId();
         this.bookingId = event.bookingId();
-        this.promotionId = event.promotionId();
         this.status = event.status();
         this.paymentStatus = PaymentStatus.NOT_PAID;
-        this.totalAmount = event.totalAmount();
+        this.totalPrice = event.totalPrice();
         this.currency = event.currency();
         this.createdAt = event.createdAt();
         this.updatedAt = event.createdAt();
+        this.isFullyInitialized.set(true);
     }
 
     @EventSourcingHandler
     public void on(OrderItemAddedEvent event) {
         OrderItem item = new OrderItem(
-                event.ticketId(),
-                event.flightId(),
-                event.seatId(),
-                event.price(),
-                event.currency(),
-                event.description()
+                event.item().getTicketId(),
+                event.item().getPrice()
         );
         this.orderItems.add(item);
         recalculateTotalAmount();
@@ -181,6 +198,13 @@ public class Order {
     public void on(OrderConfirmedEvent event) {
         this.status = OrderStatus.CONFIRMED;
         this.updatedAt = LocalDateTime.now();
+
+    }
+
+    @EventSourcingHandler
+    public void on(PromotionAppliedEvent event) {
+        this.promotionId = event.promotion().promotionId();
+        recalculateTotalAmount(event.promotion().discount(), event.promotion().discountType());
     }
 
     @EventSourcingHandler
@@ -197,13 +221,20 @@ public class Order {
     }
 
     private void recalculateTotalAmount() {
-        BigDecimal newTotal = orderItems.stream()
-                .map(OrderItem::price)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (promotionId != null) {
-            newTotal = newTotal.multiply(BigDecimal.valueOf(0.9));
+        Long price = this.orderItems.getLast().price();
+        this.totalPrice += price;
+    }
+
+    private void recalculateTotalAmount(Long discount, DiscountType discountType) {
+        switch (discountType) {
+            case COUPON -> {
+                if (discount != 0) {
+                    discount /= 100;
+                    this.totalPrice *= discount;
+                }
+            }
+            case VOUCHER -> this.totalPrice = this.totalPrice < discount ? 0 : this.totalPrice - discount;
         }
 
-        this.totalAmount = newTotal;
     }
 }

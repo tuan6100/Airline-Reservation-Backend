@@ -13,6 +13,7 @@ import vn.edu.hust.application.dto.query.OrderSummaryDTO;
 import vn.edu.hust.application.dto.query.GetOrderByBookingQuery;
 import vn.edu.hust.application.dto.query.GetOrderQuery;
 import vn.edu.hust.application.dto.query.GetOrdersByCustomerQuery;
+import vn.edu.hust.domain.exception.PromotionExpiredException;
 import vn.edu.hust.domain.model.valueobj.OrderId;
 import vn.edu.hust.infrastructure.dto.PaymentResponseDTO;
 import vn.edu.hust.infrastructure.service.PaymentServiceClient;
@@ -33,18 +34,17 @@ public class OrderApplicationService {
     @Autowired
     private PaymentServiceClient paymentServiceClient;
 
-    @Transactional
-    public CompletableFuture<Long> createOrder(CreateOrderCommand command) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return commandGateway.sendAndWait(command);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to create order", e);
-            }
-        });
+    public CompletableFuture<OrderDTO> getOrder(Long orderId) {
+        GetOrderQuery query = new GetOrderQuery();
+        query.setOrderId(orderId);
+        return queryGateway.query(query, OrderDTO.class);
     }
 
-    public CompletableFuture<Void> addOrderItem(AddOrderItemCommand command) {
+    @Transactional
+    public CompletableFuture<Long> applyOrderPromotion(Long orderId, Long promotionId) throws PromotionExpiredException {
+        ApplyPromotionToOrderCommand command = new ApplyPromotionToOrderCommand();
+        command.setOrderId(orderId);
+
         return commandGateway.send(command);
     }
 
@@ -75,12 +75,6 @@ public class OrderApplicationService {
         });
     }
 
-    public CompletableFuture<Void> confirmOrder(Long orderId) {
-        ConfirmOrderCommand command = new ConfirmOrderCommand();
-        command.setOrderId(orderId);
-        return commandGateway.send(command);
-    }
-
     public void cancelOrder(Long orderId, String reason) {
         CancelOrderCommand command = new CancelOrderCommand();
         command.setOrderId(orderId);
@@ -93,12 +87,6 @@ public class OrderApplicationService {
         command.setOrderId(orderId);
         command.setPaymentId(paymentId);
         return commandGateway.send(command);
-    }
-
-    public CompletableFuture<OrderDTO> getOrder(Long orderId) {
-        GetOrderQuery query = new GetOrderQuery();
-        query.setOrderId(orderId);
-        return queryGateway.query(query, OrderDTO.class);
     }
 
     public CompletableFuture<List<OrderSummaryDTO>> getOrdersByCustomer(Long customerId) {

@@ -1,11 +1,9 @@
 package vn.edu.hust.presentation.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.edu.hust.application.service.OrderApplicationService;
-import vn.edu.hust.application.dto.command.CreateOrderCommand;
 import vn.edu.hust.application.dto.query.OrderDTO;
 import vn.edu.hust.application.dto.query.OrderSummaryDTO;
 
@@ -19,14 +17,7 @@ public class OrderController {
     @Autowired
     private OrderApplicationService orderApplicationService;
 
-    @PostMapping("/v1/create")
-    public CompletableFuture<ResponseEntity<Long>> createOrder(@RequestBody CreateOrderCommand command) {
-        return orderApplicationService.createOrder(command)
-                .thenApply(orderId -> new ResponseEntity<>(orderId, HttpStatus.CREATED))
-                .exceptionally(_ -> new ResponseEntity<>(null, HttpStatus.BAD_REQUEST));
-    }
-
-    @GetMapping("/v1/{orderId}")
+    @GetMapping("/v1/{orderId}/get")
     public CompletableFuture<ResponseEntity<OrderDTO>> getOrder(@PathVariable Long orderId) {
         return orderApplicationService.getOrder(orderId)
                 .thenApply(order -> order != null ?
@@ -34,13 +25,22 @@ public class OrderController {
                         ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/v1/{orderId}/confirm")
-    public CompletableFuture<ResponseEntity<Object>> confirmOrder(@PathVariable Long orderId) {
-        return orderApplicationService.confirmOrder(orderId)
-                .thenApply(_ -> ResponseEntity.ok().build())
+    @PostMapping("/v1/{orderId}/apply-promotion")
+    public CompletableFuture<ResponseEntity<Long>> applyPromotion(
+            @PathVariable Long orderId,
+            @RequestParam Long promotionId
+    ) {
+        return orderApplicationService.applyOrderPromotion(orderId, promotionId)
+                .thenApply(ResponseEntity::ok)
                 .exceptionally(_ -> ResponseEntity.badRequest().build());
     }
 
+    @PostMapping("/v1/{orderId}/remove")
+    public CompletableFuture<ResponseEntity<Void>> removeItemFromOrder(
+            @PathVariable String orderId,
+            @RequestBody List<Long> ticketId) {
+        return
+    }
 
     @PostMapping("/v1/{orderId}/confirm-and-pay")
     public CompletableFuture<ResponseEntity<String>> confirmOrderAndInitiatePayment(@PathVariable Long orderId) {
@@ -64,13 +64,5 @@ public class OrderController {
     public CompletableFuture<ResponseEntity<List<OrderSummaryDTO>>> getOrdersByCustomer(@PathVariable Long customerId) {
         return orderApplicationService.getOrdersByCustomer(customerId)
                 .thenApply(ResponseEntity::ok);
-    }
-
-    @GetMapping("/v1/booking/{bookingId}")
-    public CompletableFuture<ResponseEntity<OrderDTO>> getOrderForBooking(@PathVariable String bookingId) {
-        return orderApplicationService.getOrderByBooking(bookingId)
-                .thenApply(order -> order != null ?
-                        ResponseEntity.ok(order) :
-                        ResponseEntity.notFound().build());
     }
 }

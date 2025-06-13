@@ -1,10 +1,10 @@
 package vn.edu.hust.domain.event;
 
-import java.math.BigDecimal;
+import vn.edu.hust.application.enumeration.CurrencyUnit;
 
 public record OrderConfirmedEvent(
         Long orderId,
         String bookingId,
-        BigDecimal totalAmount,
-        String currency
+        Long totalPrice,
+        CurrencyUnit currency
 ) {}
