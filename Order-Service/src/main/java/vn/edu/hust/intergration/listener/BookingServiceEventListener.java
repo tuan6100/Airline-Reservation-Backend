@@ -28,7 +28,7 @@ public class BookingServiceEventListener {
             backoff = @Backoff(delay = 500, multiplier = 2),
             include = {Exception.class}
     )
-    @KafkaListener(topics = "order-creation-requests.topic", concurrency = "order-creation-requests.ccr")
+    @KafkaListener(topics = "order-creation.topic", concurrency = "order-creation.ccr")
     public void handleOrderCreationRequest(@Payload OrderCreationRequestEvent event) {
         String nation = flightClientService.getDepartureNation(event.ticketBookedDTO().getFlightDetails().getFlightId());
         CreateOrderCommand command = new CreateOrderCommand();

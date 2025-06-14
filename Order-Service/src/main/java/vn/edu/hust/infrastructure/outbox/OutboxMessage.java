@@ -19,7 +19,7 @@ public class OutboxMessage {
     private String aggregateType;
 
     @Column(name = "aggregate_id", nullable = false)
-    private String aggregateId;
+    private Long aggregateId;
 
     @Column(name = "event_type", nullable = false)
     private String eventType;

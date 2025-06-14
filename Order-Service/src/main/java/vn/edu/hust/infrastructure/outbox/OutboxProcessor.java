@@ -1,5 +1,6 @@
 package vn.edu.hust.infrastructure.outbox;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 public class OutboxProcessor {
     @Autowired
@@ -29,8 +31,7 @@ public class OutboxProcessor {
             if (message.getRetryCount() >= 5) {
                 message.setProcessed(true);
                 message.setProcessedAt(LocalDateTime.now());
-                System.err.println("Max retries reached for outbox message: " + message.getId() +
-                        ", event: " + message.getEventType());
+                OutboxProcessor.log.info("Max retries reached for outbox message: {}, event: {}", message.getId(), message.getEventType());
             }
             outboxMessageRepository.save(message);
         }

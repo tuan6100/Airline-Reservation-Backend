@@ -17,7 +17,7 @@ public class OutboxHelper {
     private ObjectMapper objectMapper;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void saveToOutbox(String aggregateId, String eventType, Object event) {
+    public void saveToOutbox(Long aggregateId, String eventType, Object event) {
         try {
             OutboxMessage message = new OutboxMessage();
             message.setAggregateType("Order");

@@ -33,7 +33,7 @@ public class OrderEventHandler {
     }
 
     @EventHandler
-    public void on(OrderItemAddedEvent event) throws OrderNotFoundException {
+    public void on(ItemAddedEvent event) throws OrderNotFoundException {
         OrderEntity orderEntity = orderJpaRepository.findByBookingId(event.bookingId())
                 .orElseThrow(() -> new OrderNotFoundException("Order is not created "));
         OrderItemEntity orderItemEntity = new OrderItemEntity();

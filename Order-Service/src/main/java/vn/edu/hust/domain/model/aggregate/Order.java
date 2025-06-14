@@ -60,7 +60,7 @@ public class Order {
                 LocalDateTime.now()
         ));
         if (command.getItem() != null) {
-            AggregateLifecycle.apply(new OrderItemAddedEvent(
+            AggregateLifecycle.apply(new ItemAddedEvent(
                 command.getBookingId(), command.getItem()
             ));
         }
@@ -78,7 +78,7 @@ public class Order {
             throw new IllegalArgumentException("No items provided to add to order");
         }
         for (TicketBookedDTO item : command.getItems()) {
-            AggregateLifecycle.apply(new OrderItemAddedEvent(
+            AggregateLifecycle.apply(new ItemAddedEvent(
                     this.bookingId,
                     item
             ));
@@ -117,7 +117,17 @@ public class Order {
 
     @CommandHandler
     public void handle(RemoveItemFromOrderCommand command) {
-
+        if (status != OrderStatus.PENDING) {
+            throw new IllegalStateException("Order must be in PENDING state to be confirmed");
+        }
+        if (orderItems.isEmpty()) {
+            throw new IllegalStateException("Cannot remove item from an empty order");
+        }
+        AggregateLifecycle.apply((new ItemRemovedEvent(
+                orderId,
+                bookingId,
+                command.getTicketId()
+        )));
     }
 
     @CommandHandler
@@ -188,7 +198,7 @@ public class Order {
     }
 
     @EventSourcingHandler
-    public void on(OrderItemAddedEvent event) {
+    public void on(ItemAddedEvent event) {
         OrderItem item = new OrderItem(
                 event.item().getTicketId(),
                 event.item().getPrice()
@@ -212,6 +222,13 @@ public class Order {
     }
 
     @EventSourcingHandler
+    public void on(ItemRemovedEvent event) {
+        this.orderItems.removeIf(item -> item.ticketId().equals(event.ticketId()));
+        recalculateTotalAmount();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @EventSourcingHandler
     public void on(OrderCancelledEvent event) {
         this.status = OrderStatus.CANCELLED;
         this.updatedAt = event.cancelledAt();
@@ -225,8 +242,9 @@ public class Order {
     }
 
     private void recalculateTotalAmount() {
-        Long price = this.orderItems.getLast().price();
-        this.totalPrice += price;
+        this.totalPrice = this.orderItems.stream()
+                .mapToLong(OrderItem::price)
+                .sum();
     }
 
     private void recalculateTotalAmount(Long discount, DiscountType discountType) {

@@ -13,10 +13,9 @@ import vn.edu.hust.application.dto.query.OrderSummaryDTO;
 import vn.edu.hust.application.dto.query.GetOrderByBookingQuery;
 import vn.edu.hust.application.dto.query.GetOrderQuery;
 import vn.edu.hust.application.dto.query.GetOrdersByCustomerQuery;
+import vn.edu.hust.domain.event.OrderConfirmedEvent;
 import vn.edu.hust.domain.exception.PromotionExpiredException;
-import vn.edu.hust.domain.model.valueobj.OrderId;
-import vn.edu.hust.infrastructure.dto.PaymentResponseDTO;
-import vn.edu.hust.infrastructure.service.PaymentServiceClient;
+import vn.edu.hust.infrastructure.event.OrderEventPublisher;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -32,7 +31,7 @@ public class OrderApplicationService {
     private QueryGateway queryGateway;
 
     @Autowired
-    private PaymentServiceClient paymentServiceClient;
+    private OrderEventPublisher orderEventPublisher;
 
     public CompletableFuture<OrderDTO> getOrder(Long orderId) {
         GetOrderQuery query = new GetOrderQuery();
@@ -54,21 +53,8 @@ public class OrderApplicationService {
             try {
                 ConfirmOrderCommand confirmCommand = new ConfirmOrderCommand();
                 confirmCommand.setOrderId(orderId);
-                commandGateway.sendAndWait(confirmCommand);
-                OrderDTO order = getOrder(orderId).join();
-                if (order == null) {
-                    throw new IllegalArgumentException("Order not found: " + orderId);
-                }
-                PaymentResponseDTO paymentResponse = paymentServiceClient.initiatePayment(
-                        new OrderId(orderId),
-                        order.getTotalAmount(),
-                        order.getCurrency(),
-                        order.getCustomerId()
-                );
-                MarkOrderPaymentPendingCommand pendingCommand = new MarkOrderPaymentPendingCommand();
-                pendingCommand.setOrderId(orderId);
-                commandGateway.send(pendingCommand);
-                OrderApplicationService.log.info("Payment initiated for order {} with payment ID: {}", orderId, paymentResponse.getPaymentId());
+                OrderConfirmedEvent event = commandGateway.sendAndWait(confirmCommand);
+                orderEventPublisher.handleOrderConfirmedEvent(event);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to confirm order and initiate payment", e);
             }

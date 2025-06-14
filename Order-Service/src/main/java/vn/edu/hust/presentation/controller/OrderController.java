@@ -43,7 +43,7 @@ public class OrderController {
     }
 
     @PostMapping("/v1/{orderId}/confirm-and-pay")
-    public CompletableFuture<ResponseEntity<String>> confirmOrderAndInitiatePayment(@PathVariable Long orderId) {
+    public CompletableFuture<ResponseEntity<String>> confirmOrder(@PathVariable Long orderId) {
         return orderApplicationService.confirmOrderAndInitiatePayment(orderId)
                 .thenApply(_ -> ResponseEntity.ok("Order confirmed and payment initiated"))
                 .exceptionally(throwable ->

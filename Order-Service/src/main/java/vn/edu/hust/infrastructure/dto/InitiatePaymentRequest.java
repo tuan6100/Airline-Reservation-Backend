@@ -1,16 +1,14 @@
 package vn.edu.hust.infrastructure.dto;
 
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-import java.math.BigDecimal;
+import vn.edu.hust.application.enumeration.CurrencyUnit;
 
-@NoArgsConstructor
-@Setter
-public class InitiatePaymentRequest {
-    private Long orderId;
-    private BigDecimal amount;
-    private String currency;
-    private Long customerId;
 
+
+public record InitiatePaymentRequest (
+        Long orderId,
+        Long customerId,
+        Long totalPrice,
+        CurrencyUnit currency
+) {
 }
