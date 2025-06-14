@@ -67,11 +67,22 @@ public class OrderApplicationService {
                 );
                 MarkOrderPaymentPendingCommand pendingCommand = new MarkOrderPaymentPendingCommand();
                 pendingCommand.setOrderId(orderId);
-                commandGateway.sendAndWait(pendingCommand);
+                commandGateway.send(pendingCommand);
                 OrderApplicationService.log.info("Payment initiated for order {} with payment ID: {}", orderId, paymentResponse.getPaymentId());
             } catch (Exception e) {
                 throw new RuntimeException("Failed to confirm order and initiate payment", e);
             }
+        });
+    }
+
+    @Transactional
+    public void removeItemFromOrder(Long orderId, List<Long> ticketIdList) {
+        ticketIdList.stream().parallel().forEach(ticketId -> {
+            RemoveItemFromOrderCommand removeItemFromOrderCommand = new RemoveItemFromOrderCommand(
+                    orderId,
+                    ticketId
+            );
+            commandGateway.send(removeItemFromOrderCommand);
         });
     }
 

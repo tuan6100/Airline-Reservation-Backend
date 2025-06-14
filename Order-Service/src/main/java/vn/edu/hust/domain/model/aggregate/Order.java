@@ -116,6 +116,11 @@ public class Order {
     }
 
     @CommandHandler
+    public void handle(RemoveItemFromOrderCommand command) {
+
+    }
+
+    @CommandHandler
     public void handle(CancelOrderCommand command) {
         if (status == OrderStatus.CANCELLED) {
             throw new IllegalStateException("Order is already cancelled");
@@ -163,7 +168,6 @@ public class Order {
         if (status != OrderStatus.CONFIRMED) {
             throw new IllegalStateException("Order must be confirmed before marking payment pending");
         }
-
         AggregateLifecycle.apply(new OrderPaymentPendingEvent(
                 orderId,
                 LocalDateTime.now()

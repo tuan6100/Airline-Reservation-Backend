@@ -37,9 +37,9 @@ public class OrderController {
 
     @PostMapping("/v1/{orderId}/remove")
     public CompletableFuture<ResponseEntity<Void>> removeItemFromOrder(
-            @PathVariable String orderId,
-            @RequestBody List<Long> ticketId) {
-        return
+            @PathVariable Long orderId,
+            @RequestBody List<Long> ticketIdList) {
+        return orderApplicationService.removeItemFromOrder(orderId, ticketIdList);
     }
 
     @PostMapping("/v1/{orderId}/confirm-and-pay")
